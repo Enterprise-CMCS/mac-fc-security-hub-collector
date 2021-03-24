@@ -1,0 +1,47 @@
+env:
+  - GO111MODULE=on
+before:
+  hooks:
+    - go mod download
+builds:
+- env:
+    - CGO_ENABLED=0
+  goos:
+    - darwin
+    - linux
+  goarch:
+    - amd64
+  main: main.go
+brews:
+  - description: "my-cli-tool is an example."
+    github:
+      owner: trussworks
+      name: homebrew-tap
+    homepage: "https://github.com/trussworks/my-cli-tool"
+    commit_author:
+      name: trussworks-infra
+      email: infra+github@truss.works
+dockers:
+  -
+    binaries:
+      - my-cli-tool
+    image_templates:
+      - "trussworks/my-cli-tool:{{ .Tag }}"
+    skip_push: true
+archives:
+  -
+    replacements:
+      darwin: Darwin
+      linux: Linux
+      amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
