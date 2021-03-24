@@ -7,19 +7,26 @@ consumption by visualization tools.
 
 ## Installation
 
-Include installation instructions with an example
-
 ```sh
-brew tap trussworks/tap
-brew install security-hub-collector
+go get -u github.com/trussworks/security-hub-collector
 ```
 
 ## Usage
 
-Include usage information here:
-
 ```sh
-TBD
+security-hub-collector is an application for retrieving Security Hub findings for visualization
+
+Usage:
+  security-hub-collector [OPTIONS]
+
+Application Options:
+  -o, --output=  File to direct output to.
+  -p, --profile= The AWS profile to use. [$AWS_PROFILE]
+  -r, --region=  The AWS region to use. [$AWS_REGION]
+
+Help Options:
+  -h, --help     Show this help message
+
 ```
 
 ## Examples
@@ -27,5 +34,5 @@ TBD
 Run the command like this:
 
 ```sh
-TBD
+security-hub-collector -o output.csv
 ```
