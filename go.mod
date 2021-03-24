@@ -1,6 +1,6 @@
-module github.com/trussworks/cli-template
+module github.com/trussworks/security-hub-collector
 
-go 1.14
+go 1.15
 
 require (
 	github.com/aws/aws-sdk-go v1.38.4
