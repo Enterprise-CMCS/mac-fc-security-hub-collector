@@ -1,3 +1,3 @@
 FROM alpine:3
-COPY my-cli-tool /bin/my-cli-tool
-ENTRYPOINT [ "my-cli-tool" ]
+COPY security-hub-collector /bin/security-hub-collector
+ENTRYPOINT [ "security-hub-collector" ]

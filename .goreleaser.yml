@@ -13,20 +13,20 @@ builds:
     - amd64
   main: main.go
 brews:
-  - description: "my-cli-tool is an example."
+  - description: "security-hub-collector is a tool for pulling AWS Security Hub findings for visualization."
     github:
       owner: trussworks
       name: homebrew-tap
-    homepage: "https://github.com/trussworks/my-cli-tool"
+    homepage: "https://github.com/trussworks/security-hub-collector"
     commit_author:
       name: trussworks-infra
       email: infra+github@truss.works
 dockers:
   -
     binaries:
-      - my-cli-tool
+      - security-hub-collector
     image_templates:
-      - "trussworks/my-cli-tool:{{ .Tag }}"
+      - "trussworks/security-hub-collector:{{ .Tag }}"
     skip_push: true
 archives:
   -
