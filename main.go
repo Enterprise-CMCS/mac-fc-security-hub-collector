@@ -40,7 +40,7 @@ func collectFindings() {
 		log.Fatalf("could not get security hub findings: %v", err)
 	}
 
-	err = h.ConvertFindingsToCSV(findingsList)
+	err = h.WriteFindingsToOutput(findingsList)
 	if err != nil {
 		log.Fatalf("could not write outputfile: %v", err)
 	}
