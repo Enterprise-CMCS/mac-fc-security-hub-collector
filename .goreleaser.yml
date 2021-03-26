@@ -14,7 +14,7 @@ builds:
   main: main.go
 brews:
   - description: "security-hub-collector is a tool for pulling AWS Security Hub findings for visualization."
-    github:
+    tap:
       owner: trussworks
       name: homebrew-tap
     homepage: "https://github.com/trussworks/security-hub-collector"
@@ -23,7 +23,7 @@ brews:
       email: infra+github@truss.works
 dockers:
   -
-    binaries:
+    ids:
       - security-hub-collector
     image_templates:
       - "trussworks/security-hub-collector:{{ .Tag }}"

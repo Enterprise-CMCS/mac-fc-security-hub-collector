@@ -26,13 +26,13 @@ func (h *HubCollector) GetSecurityHubFindings() ([]*securityhub.AwsSecurityFindi
 	params := &securityhub.GetFindingsInput{
 		Filters: &securityhub.AwsSecurityFindingFilters{
 			RecordState: []*securityhub.StringFilter{
-				&securityhub.StringFilter{
+				{
 					Comparison: aws.String("EQUALS"),
 					Value:      aws.String("ACTIVE"),
 				},
 			},
 			WorkflowStatus: []*securityhub.StringFilter{
-				&securityhub.StringFilter{
+				{
 					Comparison: aws.String("NOT_EQUALS"),
 					Value:      aws.String("RESOLVED"),
 				},
@@ -66,16 +66,16 @@ func (h *HubCollector) ConvertFindingToRows(finding *securityhub.AwsSecurityFind
 		// the finding.
 		var record []string
 		record = append(record, "Team TBD")
-                record = append(record, *r.Type)
-                record = append(record, *finding.Title)
-                record = append(record, *finding.Description)
-                record = append(record, *finding.Severity.Label)
-                record = append(record, *finding.Remediation.Recommendation.Text)
-                record = append(record, *finding.Remediation.Recommendation.Url)
-                record = append(record, *r.Id)
-                record = append(record, *finding.AwsAccountId)
-                record = append(record, *finding.Compliance.Status)
-                record = append(record, *finding.RecordState)
+		record = append(record, *r.Type)
+		record = append(record, *finding.Title)
+		record = append(record, *finding.Description)
+		record = append(record, *finding.Severity.Label)
+		record = append(record, *finding.Remediation.Recommendation.Text)
+		record = append(record, *finding.Remediation.Recommendation.Url)
+		record = append(record, *r.Id)
+		record = append(record, *finding.AwsAccountId)
+		record = append(record, *finding.Compliance.Status)
+		record = append(record, *finding.RecordState)
 
 		// Each record *may* have multiple findings, so we make a list of
 		// records and that's what we'll output.
@@ -87,15 +87,20 @@ func (h *HubCollector) ConvertFindingToRows(finding *securityhub.AwsSecurityFind
 }
 
 // WriteFindingsToOutput - takes a list of security
-func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurityFinding) error {
+func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurityFinding) (err error) {
 	// Try to create the output file we got from the collector object
 	f, err := os.Create(h.Outfile)
 	if err != nil {
-		return err
+		return
 	}
 
 	// This will automatically close the file when the function completes.
-	defer f.Close()
+	defer func() {
+		cerr := f.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
 
 	w := csv.NewWriter(f)
 
@@ -104,7 +109,11 @@ func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurity
 	// could make the headers/fields come from some sort of schema or struct,
 	// but for now this is good enough.
 	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State"}
-	w.Write(headers)
+
+	err = w.Write(headers)
+	if err != nil {
+		return
+	}
 	w.Flush()
 
 	// For each finding, we put it through the conversion function, which
@@ -113,10 +122,13 @@ func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurity
 	for _, finding := range findings {
 		records := h.ConvertFindingToRows(finding)
 		for _, record := range records {
-			w.Write(record)
+			err = w.Write(record)
+			if err != nil {
+				return
+			}
 			w.Flush()
 		}
 	}
 
-	return nil
+	return
 }
