@@ -15,6 +15,10 @@ help:  ## Print the help documentation
 bin/security-hub-collector: ## Build security-hub-collector
 	go build -ldflags "$(LDFLAGS) -X main.version=${VERSION}" -o bin/security-hub-collector .
 
+.PHONY: test
+test:
+	go test -v ./pkg/...
+
 .PHONY: clean
 clean: ## Clean all generated files
 	rm -rf ./bin
