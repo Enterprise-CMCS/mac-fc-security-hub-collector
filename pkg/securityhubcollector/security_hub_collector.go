@@ -8,7 +8,9 @@ import (
 	"go.uber.org/zap"
 
 	"encoding/csv"
+	"encoding/json"
 	"os"
+	"path/filepath"
 )
 
 // HubCollector is a generic struct used to hold setting info
@@ -16,6 +18,64 @@ type HubCollector struct {
 	Logger    *zap.Logger
 	HubClient securityhubiface.SecurityHubAPI
 	Outfile   string
+	AcctMap   map[string]string
+}
+
+// Teams is a struct describing the format we expect in the JSON file
+// describing the team mappings
+type Teams struct {
+	Teams []Team `json:"teams"`
+}
+
+// Team is a struct describing a single team and its accounts as we
+// expect in the JSON file describing team mappings
+type Team struct {
+	Name     string   `json:"name"`
+	Accounts []string `json:"accounts"`
+}
+
+// ReadTeamMap - takes the JSON encoded file that maps teams to accounts
+// and converts it into a Teams object that we can use later.
+func ReadTeamMap(jsonFile string) (jsonTeams Teams, err error) {
+	jsonFile = filepath.Clean(jsonFile)
+
+	// gosec complains here because we're essentially letting you open
+	// any file you want, which if this was a webapp would be pretty
+	// sketchy. However, since this is a CLI tool, and you shouldn't be
+	// able to open a file you don't have permission for anyway, we can
+	// safely ignore its complaints here.
+	// #nosec
+	f, err := os.Open(jsonFile)
+
+	defer func() {
+		cerr := f.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+
+	err = json.NewDecoder(f).Decode(&jsonTeams)
+
+	return
+
+}
+
+// BuildAcctMap - builds a map of accounts to teams from a map of teams
+// to accounts. The JSON file (and the Teams object we extract from it)
+// maps teams to a list of accounts (because that is easiest for humans),
+// but what we really want for building our output is to have a mapping
+// of accounts to teams, because accounts are what we actually get from
+// the security hub finding.
+func BuildAcctMap(jsonTeams Teams) map[string]string {
+	acctMap := make(map[string]string)
+
+	for _, team := range jsonTeams.Teams {
+		for _, acct := range team.Accounts {
+			acctMap[acct] = team.Name
+		}
+	}
+
+	return acctMap
 }
 
 // GetSecurityHubFindings - gets all security hub findings from a single AWS account
@@ -65,7 +125,7 @@ func (h *HubCollector) ConvertFindingToRows(finding *securityhub.AwsSecurityFind
 		// the row we want to output into the CSV for this resource in
 		// the finding.
 		var record []string
-		record = append(record, "Team TBD")
+		record = append(record, h.AcctMap[*finding.AwsAccountId])
 		record = append(record, *r.Type)
 		record = append(record, *finding.Title)
 		record = append(record, *finding.Description)

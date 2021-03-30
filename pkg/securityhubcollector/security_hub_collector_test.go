@@ -76,6 +76,20 @@ var multiResourceSecurityFinding = &securityhub.AwsSecurityFinding{
 	Compliance: &securityhub.Compliance{Status: aws.String("FAILED")},
 }
 
+// This is an example of map that we create from the JSON team map.
+var exampleTeamMap = Teams{
+	Teams: []Team{
+		{
+			Name:     "Test Team 1",
+			Accounts: []string{"000000000001", "000000000011"},
+		},
+		{
+			Name:     "Test Team 2",
+			Accounts: []string{"000000000002", "000000000022"},
+		},
+	},
+}
+
 // This is a helper function to create a new HubCollector object; we're
 // doing this so creating a new HubCollector object is easy in tests.
 func testHubCollector(hubclient securityhubiface.SecurityHubAPI) HubCollector {
@@ -83,6 +97,7 @@ func testHubCollector(hubclient securityhubiface.SecurityHubAPI) HubCollector {
 		Logger:    logger,
 		HubClient: hubclient,
 		Outfile:   "test-output.csv",
+		AcctMap:   BuildAcctMap(exampleTeamMap),
 	}
 
 	return output
@@ -104,10 +119,29 @@ func outputEqual(a, b [][]string) bool {
 	return true
 }
 
+// This is another helper function to compare two Teams structs and
+// make sure they are identical.
+func compareTeamMaps(a, b Teams) bool {
+	for teamIndex, team := range a.Teams {
+		if team.Name != b.Teams[teamIndex].Name {
+			return false
+		}
+		for acctIndex, acct := range team.Accounts {
+			if acct != b.Teams[teamIndex].Accounts[acctIndex] {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+// This function tests the conversion of a security finding into the
+// slice format we expect for writing out our CSV.
 func TestConvertFindingToRows(t *testing.T) {
 	activeExpect := [][]string{
 		{
-			"Team TBD",
+			"Test Team 1",
 			"AwsEc2Vpc",
 			"Active Test Finding Title",
 			"Active Test Finding",
@@ -123,7 +157,7 @@ func TestConvertFindingToRows(t *testing.T) {
 
 	multiResourceExpect := [][]string{
 		{
-			"Team TBD",
+			"Test Team 1",
 			"AwsEc2Vpc",
 			"MultiResource Test Finding Title",
 			"MultiResource Test Finding",
@@ -136,7 +170,7 @@ func TestConvertFindingToRows(t *testing.T) {
 			"ACTIVE",
 		},
 		{
-			"Team TBD",
+			"Test Team 1",
 			"AwsEc2Vpc",
 			"MultiResource Test Finding Title",
 			"MultiResource Test Finding",
@@ -160,4 +194,33 @@ func TestConvertFindingToRows(t *testing.T) {
 		t.Errorf("ERROR: MultiResource finding conversion does not match expectations")
 	}
 
+}
+
+// This is a test of the account map conversion function.
+func TestBuildAcctMap(t *testing.T) {
+	acctMapExpect := map[string]string{
+		"000000000001": "Test Team 1",
+		"000000000011": "Test Team 1",
+		"000000000002": "Test Team 2",
+		"000000000022": "Test Team 2",
+	}
+
+	generatedMap := BuildAcctMap(exampleTeamMap)
+
+	for _, acct := range generatedMap {
+		if acctMapExpect[acct] != generatedMap[acct] {
+			t.Errorf("ERROR: Incorrect map created for %v", acct)
+		}
+	}
+}
+
+func TestReadTeamMap(t *testing.T) {
+	extractedTeamMap, err := ReadTeamMap("team_map_test.json")
+	if err != nil {
+		t.Errorf("ERROR: could not extract team map from test file")
+	}
+
+	if !compareTeamMaps(exampleTeamMap, extractedTeamMap) {
+		t.Errorf("ERROR: extracted team map does not match expected output")
+	}
 }
