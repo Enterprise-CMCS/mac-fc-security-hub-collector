@@ -1,6 +1,6 @@
 repos:
   - repo: git://github.com/golangci/golangci-lint
-    rev: v1.34.1
+    rev: v1.38.0
     hooks:
       - id: golangci-lint
 

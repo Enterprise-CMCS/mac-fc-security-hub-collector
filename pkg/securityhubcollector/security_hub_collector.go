@@ -26,13 +26,13 @@ func (h *HubCollector) GetSecurityHubFindings() ([]*securityhub.AwsSecurityFindi
 	params := &securityhub.GetFindingsInput{
 		Filters: &securityhub.AwsSecurityFindingFilters{
 			RecordState: []*securityhub.StringFilter{
-				&securityhub.StringFilter{
+				{
 					Comparison: aws.String("EQUALS"),
 					Value:      aws.String("ACTIVE"),
 				},
 			},
 			WorkflowStatus: []*securityhub.StringFilter{
-				&securityhub.StringFilter{
+				{
 					Comparison: aws.String("NOT_EQUALS"),
 					Value:      aws.String("RESOLVED"),
 				},
@@ -53,39 +53,82 @@ func (h *HubCollector) GetSecurityHubFindings() ([]*securityhub.AwsSecurityFindi
 	return outputList, nil
 }
 
-// ConvertFindingsToCSV - converts select Finding fields to CSV
-func (h *HubCollector) ConvertFindingsToCSV(findings []*securityhub.AwsSecurityFinding) error {
+// ConvertFindingToRows - converts a single finding to the record format we're using
+func (h *HubCollector) ConvertFindingToRows(finding *securityhub.AwsSecurityFinding) [][]string {
+	var output [][]string
+
+	// Each finding may have multiple resources, so we need to iterate through
+	// them and pull the relevant bits; we will create two lines for a single
+	// finding that has two resources, with only the resource different.
+	for _, r := range finding.Resources {
+		// Here we compile a single record, which is a representation of
+		// the row we want to output into the CSV for this resource in
+		// the finding.
+		var record []string
+		record = append(record, "Team TBD")
+		record = append(record, *r.Type)
+		record = append(record, *finding.Title)
+		record = append(record, *finding.Description)
+		record = append(record, *finding.Severity.Label)
+		record = append(record, *finding.Remediation.Recommendation.Text)
+		record = append(record, *finding.Remediation.Recommendation.Url)
+		record = append(record, *r.Id)
+		record = append(record, *finding.AwsAccountId)
+		record = append(record, *finding.Compliance.Status)
+		record = append(record, *finding.RecordState)
+
+		// Each record *may* have multiple findings, so we make a list of
+		// records and that's what we'll output.
+		output = append(output, record)
+	}
+
+	return output
+
+}
+
+// WriteFindingsToOutput - takes a list of security
+func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurityFinding) (err error) {
 	// Try to create the output file we got from the collector object
 	f, err := os.Create(h.Outfile)
 	if err != nil {
-		return err
+		return
 	}
 
 	// This will automatically close the file when the function completes.
-	defer f.Close()
+	defer func() {
+		cerr := f.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
 
 	w := csv.NewWriter(f)
+
+	// For now, we're hardcoding the headers; in the future, if it turned
+	// out the data we wanted from these findings changed regularly, w
+	// could make the headers/fields come from some sort of schema or struct,
+	// but for now this is good enough.
 	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State"}
-	w.Write(headers)
+
+	err = w.Write(headers)
+	if err != nil {
+		return
+	}
 	w.Flush()
+
+	// For each finding, we put it through the conversion function, which
+	// can generate multiple rows (due to multiple resources. For each row,
+	// we write it to the file and be done with it.
 	for _, finding := range findings {
-		for _, r := range finding.Resources {
-			var record []string
-			record = append(record, "Team TBD")
-			record = append(record, *r.Type)
-			record = append(record, *finding.Title)
-			record = append(record, *finding.Description)
-			record = append(record, *finding.Severity.Label)
-			record = append(record, *finding.Remediation.Recommendation.Text)
-			record = append(record, *finding.Remediation.Recommendation.Url)
-			record = append(record, *r.Id)
-			record = append(record, *finding.AwsAccountId)
-			record = append(record, *finding.Compliance.Status)
-			record = append(record, *finding.RecordState)
-			w.Write(record)
+		records := h.ConvertFindingToRows(finding)
+		for _, record := range records {
+			err = w.Write(record)
+			if err != nil {
+				return
+			}
+			w.Flush()
 		}
-		w.Flush()
 	}
 
-	return nil
+	return
 }
