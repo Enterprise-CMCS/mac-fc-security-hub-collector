@@ -3,7 +3,9 @@
 ## Description
 
 This tool pulls findings from AWS Security Hub and outputs them for
-consumption by visualization tools.
+consumption by visualization tools. In order to use this tool, you will
+need to have valid AWS credentials in your environment (or provide a
+profile for the tool to use).
 
 ## Installation
 
@@ -20,19 +22,7 @@ Usage:
   security-hub-collector [OPTIONS]
 
 Application Options:
-  -o, --output=  File to direct output to.
-  -p, --profile= The AWS profile to use. [$AWS_PROFILE]
-  -r, --region=  The AWS region to use. [$AWS_REGION]
-  -m, --teammap= JSON file containing team to account mappings.
-
-Help Options:
-  -h, --help     Show this help message
-
-2021/03/30 14:25:32 could not parse options: Usage:
-  security-hub-collector [OPTIONS]
-
-Application Options:
-  -o, --output=  File to direct output to.
+  -o, --output=  File to direct output to. (default: SecurityHub-Findings.csv)
   -p, --profile= The AWS profile to use. [$AWS_PROFILE]
   -r, --region=  The AWS region to use. [$AWS_REGION]
   -m, --teammap= JSON file containing team to account mappings.
@@ -47,5 +37,5 @@ Help Options:
 Run the command like this:
 
 ```sh
-security-hub-collector -o output.csv -m teammap.json
+security-hub-collector -m teammap.json
 ```
