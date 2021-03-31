@@ -4,7 +4,7 @@ jobs:
     - auth:
         password: $DOCKER_PASSWORD
         username: $DOCKER_USERNAME
-      image: trussworks/circleci:29ab89fdada1f85c5d8fb685a2c71660f0c5f60c
+      image: trussworks/circleci:62e7cada934784e47333e47175be728aa3475b02
     steps:
     - checkout
     - setup_remote_docker
@@ -14,7 +14,7 @@ jobs:
     - auth:
         password: $DOCKER_PASSWORD
         username: $DOCKER_USERNAME
-      image: trussworks/circleci:29ab89fdada1f85c5d8fb685a2c71660f0c5f60c
+      image: trussworks/circleci:62e7cada934784e47333e47175be728aa3475b02
     steps:
     - checkout
     - restore_cache:
@@ -31,7 +31,7 @@ jobs:
         paths:
         - ~/.cache/pre-commit
 references:
-  circleci: trussworks/circleci:29ab89fdada1f85c5d8fb685a2c71660f0c5f60c
+  circleci: trussworks/circleci:62e7cada934784e47333e47175be728aa3475b02
 version: 2.1
 workflows:
   release:
