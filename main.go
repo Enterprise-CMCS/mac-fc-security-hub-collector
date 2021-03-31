@@ -13,9 +13,10 @@ import (
 
 // Options describes the command line options available.
 type Options struct {
-	Outfile string `short:"o" long:"output" required:"true" description:"File to direct output to."`
-	Profile string `short:"p" long:"profile" env:"AWS_PROFILE" required:"false" description:"The AWS profile to use."`
-	Region  string `short:"r" long:"region" env:"AWS_REGION" required:"false" description:"The AWS region to use."`
+	Outfile     string `short:"o" long:"output" required:"true" description:"File to direct output to."`
+	Profile     string `short:"p" long:"profile" env:"AWS_PROFILE" required:"false" description:"The AWS profile to use."`
+	Region      string `short:"r" long:"region" env:"AWS_REGION" required:"false" description:"The AWS region to use."`
+	TeamMapFile string `short:"m" long:"teammap" required:"true" description:"JSON file containing team to account mappings."`
 }
 
 var options Options
@@ -28,11 +29,20 @@ func makeHubClient(region, profile string) *securityhub.SecurityHub {
 	return hubClient
 }
 
+// collectFindings is doing the bulk of our work here; it reads in the
+// team map JSON file, builds the HubCollector object, gets the findings,
+// and then writes the findings to the output file.
 func collectFindings() {
+	teamMap, err := securityhubcollector.ReadTeamMap(options.TeamMapFile)
+	if err != nil {
+		return
+	}
+
 	h := securityhubcollector.HubCollector{
 		Logger:    logger,
 		HubClient: makeHubClient(options.Region, options.Profile),
 		Outfile:   options.Outfile,
+		AcctMap:   securityhubcollector.BuildAcctMap(teamMap),
 	}
 
 	findingsList, err := h.GetSecurityHubFindings()
