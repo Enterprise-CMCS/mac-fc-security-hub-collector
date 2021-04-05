@@ -32,6 +32,23 @@ Help Options:
 
 ```
 
+You will need to create a team map file with a JSON object that describes
+your teams based on account numbers. For example:
+
+```json
+{
+  "teams": [
+    {
+      "accounts": [
+        "000000000001",
+        "000000000011"
+      ],
+      "name": "My Team"
+    }
+  ]
+}
+```
+
 ## Examples
 
 Run the command like this:
