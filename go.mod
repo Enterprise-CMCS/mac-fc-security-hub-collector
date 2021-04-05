@@ -3,7 +3,7 @@ module github.com/trussworks/security-hub-collector
 go 1.15
 
 require (
-	github.com/aws/aws-sdk-go v1.38.9
+	github.com/aws/aws-sdk-go v1.38.12
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/stretchr/testify v1.6.1 // indirect
