@@ -12,21 +12,12 @@ builds:
   goarch:
     - amd64
   main: main.go
-brews:
-  - description: "security-hub-collector is a tool for pulling AWS Security Hub findings for visualization."
-    tap:
-      owner: trussworks
-      name: homebrew-tap
-    homepage: "https://github.com/trussworks/security-hub-collector"
-    commit_author:
-      name: trussworks-infra
-      email: infra+github@truss.works
 dockers:
   -
     ids:
       - security-hub-collector
     image_templates:
-      - "trussworks/security-hub-collector:{{ .Tag }}"
+      - "CMSGov/security-hub-collector:{{ .Tag }}"
     skip_push: true
 archives:
   -

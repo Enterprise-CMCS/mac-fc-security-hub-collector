@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/trussworks/security-hub-collector/internal/aws/session"
-	"github.com/trussworks/security-hub-collector/pkg/securityhubcollector"
+	"github.com/CMSGov/security-hub-collector/internal/aws/session"
+	"github.com/CMSGov/security-hub-collector/pkg/securityhubcollector"
 
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	flag "github.com/jessevdk/go-flags"
