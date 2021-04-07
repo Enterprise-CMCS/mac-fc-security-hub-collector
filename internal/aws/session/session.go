@@ -2,6 +2,7 @@ package session
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
@@ -9,7 +10,8 @@ import (
 // using shared credentials, and with region and profile overrides.
 func MakeSession(region, profile string) (*session.Session, error) {
 	sessOpts := session.Options{
-		SharedConfigState: session.SharedConfigEnable,
+		SharedConfigState:       session.SharedConfigEnable,
+		AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
 	}
 	if profile != "" {
 		sessOpts.Profile = profile
