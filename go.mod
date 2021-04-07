@@ -1,4 +1,4 @@
-module github.com/trussworks/security-hub-collector
+module github.com/CMSGov/security-hub-collector
 
 go 1.15
 

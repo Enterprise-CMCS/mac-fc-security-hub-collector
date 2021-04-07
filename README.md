@@ -10,7 +10,7 @@ profile for the tool to use).
 ## Installation
 
 ```sh
-go get -u github.com/trussworks/security-hub-collector
+go get -u github.com/CMSGov/security-hub-collector
 ```
 
 ## Usage
