@@ -137,8 +137,16 @@ func (h *HubCollector) ConvertFindingToRows(finding *securityhub.AwsSecurityFind
 		if finding.Remediation == nil {
 			record = append(record, "", "")
 		} else {
-			record = append(record, *finding.Remediation.Recommendation.Text)
-			record = append(record, *finding.Remediation.Recommendation.Url)
+			if finding.Remediation.Recommendation == nil {
+				record = append(record, "", "")
+			} else {
+				record = append(record, *finding.Remediation.Recommendation.Text)
+				if finding.Remediation.Recommendation.Url == nil {
+					record = append(record, "")
+				} else {
+					record = append(record, *finding.Remediation.Recommendation.Url)
+				}
+			}
 		}
 		record = append(record, *r.Id)
 		record = append(record, *finding.AwsAccountId)
