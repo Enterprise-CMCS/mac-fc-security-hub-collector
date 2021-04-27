@@ -76,6 +76,34 @@ var multiResourceSecurityFinding = &securityhub.AwsSecurityFinding{
 	Compliance: &securityhub.Compliance{Status: aws.String("FAILED")},
 }
 
+// This is an active security finding that is the most basic that we're
+// likely to see from Security Hub and is a type we want to actually see.
+var noComplianceSecurityFinding = &securityhub.AwsSecurityFinding{
+	AwsAccountId: aws.String("000000000001"),
+	CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
+	Description:  aws.String("Active Test Finding"),
+	ProductArn:   aws.String("arn:aws:securityhub:us-east-1::product/aws/securityhub"),
+	RecordState:  aws.String("ACTIVE"),
+	Resources: []*securityhub.Resource{
+		{
+			Id:   aws.String("arn:aws:ec2:us-test-1:000000000001:vpc/vpc-00000000000000001"),
+			Type: aws.String("AwsEc2Vpc"),
+		},
+	},
+	SchemaVersion: aws.String("2018-10-08"),
+	Title:         aws.String("Active Test Finding Title"),
+	UpdatedAt:     aws.String("2020-03-22T13:22:13.933Z"),
+	Workflow:      &securityhub.Workflow{Status: aws.String("NEW")},
+	Severity:      &securityhub.Severity{Label: aws.String("HIGH")},
+	Remediation: &securityhub.Remediation{
+		Recommendation: &securityhub.Recommendation{
+			Text: aws.String("Do the thing"),
+			Url:  aws.String("https://example.com/dothething"),
+		},
+	},
+	Compliance: nil,
+}
+
 // This is an example of map that we create from the JSON team map.
 var exampleTeamMap = Teams{
 	Teams: []Team{
@@ -184,6 +212,22 @@ func TestConvertFindingToRows(t *testing.T) {
 		},
 	}
 
+	noComplianceExpect := [][]string{
+		{
+			"Test Team 1",
+			"AwsEc2Vpc",
+			"Active Test Finding Title",
+			"Active Test Finding",
+			"HIGH",
+			"Do the thing",
+			"https://example.com/dothething",
+			"arn:aws:ec2:us-test-1:000000000001:vpc/vpc-00000000000000001",
+			"000000000001",
+			"",
+			"ACTIVE",
+		},
+	}
+
 	h := testHubCollector(&mockSecurityHubClient{})
 
 	if !outputEqual(h.ConvertFindingToRows(activeSecurityFinding), activeExpect) {
@@ -192,6 +236,10 @@ func TestConvertFindingToRows(t *testing.T) {
 
 	if !outputEqual(h.ConvertFindingToRows(multiResourceSecurityFinding), multiResourceExpect) {
 		t.Errorf("ERROR: MultiResource finding conversion does not match expectations")
+	}
+
+	if !outputEqual(h.ConvertFindingToRows(noComplianceSecurityFinding), noComplianceExpect) {
+		t.Errorf("ERROR: NoCompliance finding conversion does not match expectations")
 	}
 
 }

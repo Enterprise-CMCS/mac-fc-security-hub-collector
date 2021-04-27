@@ -129,12 +129,24 @@ func (h *HubCollector) ConvertFindingToRows(finding *securityhub.AwsSecurityFind
 		record = append(record, *r.Type)
 		record = append(record, *finding.Title)
 		record = append(record, *finding.Description)
-		record = append(record, *finding.Severity.Label)
-		record = append(record, *finding.Remediation.Recommendation.Text)
-		record = append(record, *finding.Remediation.Recommendation.Url)
+		if finding.Severity == nil {
+			record = append(record, "")
+		} else {
+			record = append(record, *finding.Severity.Label)
+		}
+		if finding.Remediation == nil {
+			record = append(record, "", "")
+		} else {
+			record = append(record, *finding.Remediation.Recommendation.Text)
+			record = append(record, *finding.Remediation.Recommendation.Url)
+		}
 		record = append(record, *r.Id)
 		record = append(record, *finding.AwsAccountId)
-		record = append(record, *finding.Compliance.Status)
+		if finding.Compliance == nil {
+			record = append(record, "")
+		} else {
+			record = append(record, *finding.Compliance.Status)
+		}
 		record = append(record, *finding.RecordState)
 
 		// Each record *may* have multiple findings, so we make a list of
