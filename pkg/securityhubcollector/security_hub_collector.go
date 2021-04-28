@@ -32,6 +32,7 @@ type Teams struct {
 type Team struct {
 	Name     string   `json:"name"`
 	Accounts []string `json:"accounts"`
+	Profiles []string `json:"profiles"`
 }
 
 // ReadTeamMap - takes the JSON encoded file that maps teams to accounts
@@ -76,6 +77,19 @@ func BuildAcctMap(jsonTeams Teams) map[string]string {
 	}
 
 	return acctMap
+}
+
+// BuildProfileList - builds a list of all the AWS profiles to use to gather data
+func BuildProfileList(jsonTeams Teams) []string {
+	var profileList []string
+
+	for _, team := range jsonTeams.Teams {
+		for _, profile := range team.Profiles {
+			profileList = append(profileList, profile)
+		}
+	}
+
+	return profileList
 }
 
 // GetSecurityHubFindings - gets all security hub findings from a single AWS account
@@ -167,11 +181,19 @@ func (h *HubCollector) ConvertFindingToRows(finding *securityhub.AwsSecurityFind
 }
 
 // WriteFindingsToOutput - takes a list of security
-func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurityFinding) (err error) {
-	// Try to create the output file we got from the collector object
-	f, err := os.Create(h.Outfile)
-	if err != nil {
-		return
+func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurityFinding, writeHeaders bool) (err error) {
+	var f *os.File
+	if writeHeaders {
+		// Try to create the output file we got from the collector object
+		f, err = os.Create(h.Outfile)
+		if err != nil {
+			return err
+		}
+	} else {
+		f, err = os.OpenFile(h.Outfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
 	}
 
 	// This will automatically close the file when the function completes.
@@ -184,17 +206,19 @@ func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurity
 
 	w := csv.NewWriter(f)
 
-	// For now, we're hardcoding the headers; in the future, if it turned
-	// out the data we wanted from these findings changed regularly, w
-	// could make the headers/fields come from some sort of schema or struct,
-	// but for now this is good enough.
-	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State"}
+	if writeHeaders {
+		// For now, we're hardcoding the headers; in the future, if it turned
+		// out the data we wanted from these findings changed regularly, w
+		// could make the headers/fields come from some sort of schema or struct,
+		// but for now this is good enough.
+		headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State"}
 
-	err = w.Write(headers)
-	if err != nil {
-		return
+		err = w.Write(headers)
+		if err != nil {
+			return err
+		}
+		w.Flush()
 	}
-	w.Flush()
 
 	// For each finding, we put it through the conversion function, which
 	// can generate multiple rows (due to multiple resources. For each row,
@@ -204,7 +228,7 @@ func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurity
 		for _, record := range records {
 			err = w.Write(record)
 			if err != nil {
-				return
+				return err
 			}
 			w.Flush()
 		}
