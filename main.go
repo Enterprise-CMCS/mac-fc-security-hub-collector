@@ -35,22 +35,40 @@ func makeHubClient(region, profile string) *securityhub.SecurityHub {
 func collectFindings() {
 	teamMap, err := securityhubcollector.ReadTeamMap(options.TeamMapFile)
 	if err != nil {
-		return
+		log.Fatalf("could not parse team map: %v", err)
 	}
 
+	profiles := securityhubcollector.BuildProfileList(teamMap)
+	acctMap := securityhubcollector.BuildAcctMap(teamMap)
+
+	if len(profiles) > 0 {
+		for idx, profile := range profiles {
+			log.Printf("%v: %v", idx, profile)
+			processFindings(idx, acctMap, profile)
+		}
+	} else {
+		processFindings(0, acctMap, options.Profile)
+	}
+}
+
+func processFindings(index int, acctMap map[string]string, profile string) {
 	h := securityhubcollector.HubCollector{
 		Logger:    logger,
-		HubClient: makeHubClient(options.Region, options.Profile),
+		HubClient: makeHubClient(options.Region, profile),
 		Outfile:   options.Outfile,
-		AcctMap:   securityhubcollector.BuildAcctMap(teamMap),
+		AcctMap:   acctMap,
 	}
 
 	findingsList, err := h.GetSecurityHubFindings()
 	if err != nil {
 		log.Fatalf("could not get security hub findings: %v", err)
 	}
+	writeHeaders := true
+	if index > 0 {
+		writeHeaders = false
+	}
 
-	err = h.WriteFindingsToOutput(findingsList)
+	err = h.WriteFindingsToOutput(findingsList, writeHeaders)
 	if err != nil {
 		log.Fatalf("could not write outputfile: %v", err)
 	}
