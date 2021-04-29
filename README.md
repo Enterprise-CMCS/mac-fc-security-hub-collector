@@ -49,9 +49,9 @@ your teams based on account numbers. For example:
 }
 ```
 
-If you want to be able to query multiple accounts using a cross account role, you can specify the AWS profiles in the map as well. You will need to make sure that your AWS CLI configuration has each a profile for each account properly defined, and want to use `-p` option to the app to specify the `source_profile` that is used for each cross account profile. Keep in mind that you will also need to have `~/.aws/credentials` with a matching profile for the primary account.
+If you want to be able to query multiple accounts using a cross account role, you can specify the AWS profiles in the map as well. You will need to make sure that your AWS CLI configuration has a profile defined for each account with the `role_arn`, and need to use the `-p` option to the app to specify the same profile that is used for the `source_profile` in each cross account profile. Keep in mind that you will also need to have `~/.aws/credentials` with a matching profile name and proper credentials (`aws_access_key_id` and `aws_secret_access_key`) for the primary account.
 
-**NOTE**: If you are using MFA, each time the application moves on to the next account, it will ask for a new token. **DO NOT RE-USE TOKENS**. You have to wait for the next token for each account accessed.
+**NOTE**: If you are using MFA like in the following examples, each time the application moves on to the next account, it will ask for a new MFA token. **DO NOT RE-USE TOKENS**. You have to wait for the next token for each account accessed.
 
 For example, if our `~/.aws/config` looks like:
 
@@ -74,6 +74,13 @@ mfa_serial=arn:aws:iam::111111111111:mfa/SERIAL
 region=us-east-1
 output=json
 role_arn=arn:aws:iam::000000000011:role/crossacct-role
+```
+
+and our `~/.aws/credentials` looks like:
+```
+[profile primary-account]
+aws_access_key_id=AKXXXXXXXXXXXXXXXXXX
+aws_secret_access_key=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 Then our team map looks like:
