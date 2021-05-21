@@ -4,6 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/aws/aws-sdk-go/service/securityhub/securityhubiface"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 
 	"go.uber.org/zap"
 
@@ -11,6 +12,9 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"path"
+	"strings"
+	"time"
 )
 
 // HubCollector is a generic struct used to hold setting info
@@ -90,6 +94,44 @@ func BuildProfileList(jsonTeams Teams) []string {
 	}
 
 	return profileList
+}
+
+// WriteFindingsToS3 - Writes the finding results file to an S3 bucket
+func WriteFindingsToS3(s3uploader *s3manager.Uploader, s3bucket string, s3key string, outfile string) (err error) {
+	// if we got a bucket, let's try to upload
+	if (s3bucket != "") {
+
+		// use Outfile name as the key by default
+		key := outfile
+		// if the passed in key exists, use that
+		if (s3key != "") {
+			key = s3key
+		}
+
+		// Carve up things and throw in timestamp in the key
+		current := time.Now()
+		suffix := current.Format("2006-01-02_15.04.05")
+		ext := path.Ext(key)
+		fn := strings.TrimSuffix(key, ext)
+		key = fn + "_" + suffix +  ext
+
+		// open our local file for reading
+		f, err := os.Open(outfile)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		upParams := &s3manager.UploadInput {
+			Bucket: aws.String(s3bucket),
+			Key: aws.String(key),
+			Body: f,
+		}
+		_, err = s3uploader.Upload(upParams)
+		return err
+	}
+
+	return
 }
 
 // GetSecurityHubFindings - gets all security hub findings from a single AWS account
