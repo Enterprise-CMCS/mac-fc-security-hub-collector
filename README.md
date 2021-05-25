@@ -22,10 +22,12 @@ Usage:
   security-hub-collector [OPTIONS]
 
 Application Options:
-  -o, --output=  File to direct output to. (default: SecurityHub-Findings.csv)
-  -p, --profile= The AWS profile to use. [$AWS_PROFILE]
-  -r, --region=  The AWS region to use. [$AWS_REGION]
-  -m, --teammap= JSON file containing team to account mappings.
+  -o, --output=   File to direct output to. (default: SecurityHub-Findings.csv)
+  -s, --s3bucket= S3 bucket where you would like to have the output file uploaded
+  -k, --s3key=    The S3 key (path/filename) to use (defaults to --output, will have timestamp inserted in name)
+  -p, --profile=  The AWS profile to use. [$AWS_PROFILE]
+  -r, --region=   The AWS region to use. [$AWS_REGION]
+  -m, --teammap=  JSON file containing team to account mappings.
 
 Help Options:
   -h, --help     Show this help message
