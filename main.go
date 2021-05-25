@@ -5,6 +5,8 @@ import (
 	"github.com/CMSGov/security-hub-collector/pkg/securityhubcollector"
 
 	"github.com/aws/aws-sdk-go/service/securityhub"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+
 	flag "github.com/jessevdk/go-flags"
 	"go.uber.org/zap"
 
@@ -16,17 +18,26 @@ type Options struct {
 	Outfile     string `short:"o" long:"output" required:"false" description:"File to direct output to." default:"SecurityHub-Findings.csv"`
 	Profile     string `short:"p" long:"profile" env:"AWS_PROFILE" required:"false" description:"The AWS profile to use."`
 	Region      string `short:"r" long:"region" env:"AWS_REGION" required:"false" description:"The AWS region to use."`
+	S3Bucket		string `short:"s" long:"s3bucket" required:"false" description:"S3 bucket to use to upload results."`
+	S3Key				string `short:"k" long:"s3key" required:"false" description:"S3 bucket key, or path, to use to upload results."`
 	TeamMapFile string `short:"m" long:"teammap" required:"true" description:"JSON file containing team to account mappings."`
 }
 
 var options Options
 var logger *zap.Logger
 
-// makeHubClient establishes our session with AWS.
+// makeHubClient establishes our session with AWS and creates SecurityHub connection
 func makeHubClient(region, profile string) *securityhub.SecurityHub {
 	sess := session.MustMakeSession(region, profile)
 	hubClient := securityhub.New(sess)
 	return hubClient
+}
+
+// makeS3Uploader establishes our session with AWS and creates S3 connection
+func makeS3Uploader(region, profile string) *s3manager.Uploader {
+	sess := session.MustMakeSession(region, profile)
+	s3Uploader := s3manager.NewUploader(sess)
+	return s3Uploader
 }
 
 // collectFindings is doing the bulk of our work here; it reads in the
@@ -48,6 +59,12 @@ func collectFindings() {
 		}
 	} else {
 		processFindings(0, acctMap, options.Profile)
+	}
+
+	s3uploader := makeS3Uploader(options.Region, options.Profile)
+	err = securityhubcollector.WriteFindingsToS3(s3uploader, options.S3Bucket, options.S3Key, options.Outfile)
+	if err != nil {
+		log.Fatalf("could not write output to S3: %v", err)
 	}
 }
 
