@@ -2,17 +2,17 @@ package securityhubcollector
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/aws/aws-sdk-go/service/securityhub/securityhubiface"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 
 	"go.uber.org/zap"
 
 	"encoding/csv"
 	"encoding/json"
 	"os"
-	"path/filepath"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -99,12 +99,12 @@ func BuildProfileList(jsonTeams Teams) []string {
 // WriteFindingsToS3 - Writes the finding results file to an S3 bucket
 func WriteFindingsToS3(s3uploader *s3manager.Uploader, s3bucket string, s3key string, outfile string) (err error) {
 	// if we got a bucket, let's try to upload
-	if (s3bucket != "") {
+	if s3bucket != "" {
 
 		// use Outfile name as the key by default
 		key := outfile
 		// if the passed in key exists, use that
-		if (s3key != "") {
+		if s3key != "" {
 			key = s3key
 		}
 
@@ -113,19 +113,26 @@ func WriteFindingsToS3(s3uploader *s3manager.Uploader, s3bucket string, s3key st
 		suffix := current.Format("2006-01-02_15.04.05")
 		ext := path.Ext(key)
 		fn := strings.TrimSuffix(key, ext)
-		key = fn + "_" + suffix +  ext
+		key = fn + "_" + suffix + ext
 
 		// open our local file for reading
-		f, err := os.Open(outfile)
+		f, err := os.Open(outfile) //nolint
 		if err != nil {
 			return err
 		}
-		defer f.Close()
 
-		upParams := &s3manager.UploadInput {
+		// This will automatically close the file when the function completes.
+		defer func() {
+			cerr := f.Close()
+			if err == nil {
+				err = cerr
+			}
+		}()
+
+		upParams := &s3manager.UploadInput{
 			Bucket: aws.String(s3bucket),
-			Key: aws.String(key),
-			Body: f,
+			Key:    aws.String(key),
+			Body:   f,
 		}
 		_, err = s3uploader.Upload(upParams)
 		return err
@@ -232,7 +239,7 @@ func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurity
 			return err
 		}
 	} else {
-		f, err = os.OpenFile(h.Outfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		f, err = os.OpenFile(h.Outfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
 			return err
 		}

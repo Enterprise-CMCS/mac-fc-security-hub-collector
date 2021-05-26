@@ -4,8 +4,8 @@ import (
 	"github.com/CMSGov/security-hub-collector/internal/aws/session"
 	"github.com/CMSGov/security-hub-collector/pkg/securityhubcollector"
 
-	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go/service/securityhub"
 
 	flag "github.com/jessevdk/go-flags"
 	"go.uber.org/zap"
@@ -18,8 +18,8 @@ type Options struct {
 	Outfile     string `short:"o" long:"output" required:"false" description:"File to direct output to." default:"SecurityHub-Findings.csv"`
 	Profile     string `short:"p" long:"profile" env:"AWS_PROFILE" required:"false" description:"The AWS profile to use."`
 	Region      string `short:"r" long:"region" env:"AWS_REGION" required:"false" description:"The AWS region to use."`
-	S3Bucket		string `short:"s" long:"s3bucket" required:"false" description:"S3 bucket to use to upload results."`
-	S3Key				string `short:"k" long:"s3key" required:"false" description:"S3 bucket key, or path, to use to upload results."`
+	S3Bucket    string `short:"s" long:"s3bucket" required:"false" description:"S3 bucket to use to upload results."`
+	S3Key       string `short:"k" long:"s3key" required:"false" description:"S3 bucket key, or path, to use to upload results."`
 	TeamMapFile string `short:"m" long:"teammap" required:"true" description:"JSON file containing team to account mappings."`
 }
 

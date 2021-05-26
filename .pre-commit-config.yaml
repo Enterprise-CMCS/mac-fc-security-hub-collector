@@ -21,8 +21,8 @@ repos:
     hooks:
       - id: markdownlint
 
-  - repo: git://github.com/trussworks/pre-commit-hooks
-    rev: v1.0.0
+  - repo: https://github.com/pryorda/dockerfilelint-precommit-hooks
+    rev: v0.1.0
     hooks:
-      - id: circleci-validate
-      - id: goreleaser-check
+      - id: dockerfilelint
+        stages: [commit]
