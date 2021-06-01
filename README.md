@@ -57,7 +57,7 @@ If you want to be able to query multiple accounts using a cross account role, yo
 
 For example, if our `~/.aws/config` looks like:
 
-```
+```ini
 [profile primary-account]
 mfa_serial=arn:aws:iam::111111111111:mfa/SERIAL
 region=us-east-1
@@ -79,13 +79,15 @@ role_arn=arn:aws:iam::000000000011:role/crossacct-role
 ```
 
 and our `~/.aws/credentials` looks like:
-```
+
+```ini
 [profile primary-account]
 aws_access_key_id=AKXXXXXXXXXXXXXXXXXX
 aws_secret_access_key=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 Then our team map looks like:
+
 ```json
 {
   "teams": [

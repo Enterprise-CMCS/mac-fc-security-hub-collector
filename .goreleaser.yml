@@ -17,7 +17,7 @@ dockers:
     ids:
       - security-hub-collector
     image_templates:
-      - "CMSGov/security-hub-collector:{{ .Tag }}"
+      - "cmsgov/security-hub-collector:{{ .Tag }}"
     skip_push: true
 archives:
   -
@@ -29,10 +29,17 @@ checksum:
   name_template: 'checksums.txt'
   algorithm: sha256
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  name_template: "git-{{ .ShortCommit }}"
 changelog:
   sort: asc
   filters:
     exclude:
     - '^docs:'
     - '^test:'
+release:
+  github:
+    owner: CMSgov
+    name: security-hub-collector
+  draft: false
+  prerelease: false
+  name_template: "{{ .Tag }}"
