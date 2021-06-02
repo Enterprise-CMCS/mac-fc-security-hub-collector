@@ -27,6 +27,10 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+      - name: goreleaser snapshot build
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          args: build --rm-dist --snapshot
       - name: Build the Docker image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
