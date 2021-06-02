@@ -31,4 +31,4 @@ jobs:
     - name: goreleaser snapshot build
       uses: goreleaser/goreleaser-action@v2
       with:
-        args: release --rm-dist --snapshot
+        args: build --rm-dist --snapshot
