@@ -1,5 +1,0 @@
-# Team to Account mappings - json
-team_map: <%= ENV['TEAM_MAP'] %>
-
-# S3 Bucket Path
-s3_bucket_path: <%= ENV['S3_BUCKET_PATH'] %>

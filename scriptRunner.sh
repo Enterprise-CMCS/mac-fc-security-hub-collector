@@ -1,7 +1,6 @@
 #!/bin/sh
+set -eu
 
-echo $team_map | base64 -d > teammap.json
+echo $TEAM_MAP | base64 -d > teammap.json
 
-echo $s3_bucket_path
-
-security-hub-collector -m teammap.json -s $s3_bucket_path
+security-hub-collector -m teammap.json -s $S3_BUCKET_PATH
