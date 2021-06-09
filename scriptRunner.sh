@@ -10,3 +10,5 @@ security-hub-collector \
   -s $S3_BUCKET_PATH \
   ${OUTPUT:+-o "$OUTPUT"} \
   ${S3_KEY:+-k "$S3_KEY"}
+
+echo "Task complete"
