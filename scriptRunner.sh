@@ -1,5 +1,5 @@
 #!/bin/sh
 
-export team_map_decoded= echo $team_map | base64 -d
+echo $team_map | base64 -d > teammap.json
 
-security-hub-collector -m $team_map_decoded -s $s3_bucket_path
+security-hub-collector -m teammap.json -s $s3_bucket_path
