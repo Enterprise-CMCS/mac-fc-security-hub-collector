@@ -1,9 +1,13 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/CMSGov/security-hub-collector/internal/aws/session"
 	"github.com/CMSGov/security-hub-collector/pkg/securityhubcollector"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/securityhub"
 
@@ -15,6 +19,7 @@ import (
 
 // Options describes the command line options available.
 type Options struct {
+	AssumedRole string `short:"a" long:"assumedrole" required:"false" description:"Role name to assume when collecting across all accounts."`
 	Outfile     string `short:"o" long:"output" required:"false" description:"File to direct output to." default:"SecurityHub-Findings.csv"`
 	Profile     string `short:"p" long:"profile" env:"AWS_PROFILE" required:"false" description:"The AWS profile to use."`
 	Region      string `short:"r" long:"region" env:"AWS_REGION" required:"false" description:"The AWS region to use."`
@@ -27,10 +32,17 @@ var options Options
 var logger *zap.Logger
 
 // makeHubClient establishes our session with AWS and creates SecurityHub connection
-func makeHubClient(region, profile string) *securityhub.SecurityHub {
+func makeHubClient(region, profile string, roleArn string) *securityhub.SecurityHub {
 	sess := session.MustMakeSession(region, profile)
-	hubClient := securityhub.New(sess)
-	return hubClient
+	if roleArn != "" {
+		log.Printf("%v", roleArn)
+		creds := stscreds.NewCredentials(sess, roleArn)
+		hubClient := securityhub.New(sess, aws.NewConfig().WithCredentials(creds))
+		return hubClient
+	} else {
+		hubClient := securityhub.New(sess)
+		return hubClient
+	}
 }
 
 // makeS3Uploader establishes our session with AWS and creates S3 connection
@@ -55,10 +67,18 @@ func collectFindings() {
 	if len(profiles) > 0 {
 		for idx, profile := range profiles {
 			log.Printf("%v: %v", idx, profile)
-			processFindings(idx, acctMap, profile)
+			processFindings(idx, acctMap, profile, "")
+		}
+	} else if options.AssumedRole != "" {
+		idx := 0
+		for account, _ := range acctMap {
+			log.Printf("%v: %v", idx, account)
+			roleArn := fmt.Sprintf("arn:aws:iam::%v:role/%v", account, options.AssumedRole)
+			processFindings(idx, acctMap, options.Profile, roleArn)
+			idx++
 		}
 	} else {
-		processFindings(0, acctMap, options.Profile)
+		processFindings(0, acctMap, options.Profile, "")
 	}
 
 	s3uploader := makeS3Uploader(options.Region, options.Profile)
@@ -68,10 +88,10 @@ func collectFindings() {
 	}
 }
 
-func processFindings(index int, acctMap map[string]string, profile string) {
+func processFindings(index int, acctMap map[string]string, profile string, roleArn string) {
 	h := securityhubcollector.HubCollector{
 		Logger:    logger,
-		HubClient: makeHubClient(options.Region, profile),
+		HubClient: makeHubClient(options.Region, profile, roleArn),
 		Outfile:   options.Outfile,
 		AcctMap:   acctMap,
 	}
