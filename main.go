@@ -26,6 +26,7 @@ type Options struct {
 	S3Bucket    string `short:"s" long:"s3bucket" required:"false" description:"S3 bucket to use to upload results."`
 	S3Key       string `short:"k" long:"s3key" required:"false" description:"S3 bucket key, or path, to use to upload results."`
 	TeamMapFile string `short:"m" long:"teammap" required:"true" description:"JSON file containing team to account mappings."`
+	UploadFlag  bool   `short:"u" long:"upload-only" description:"flag to upload results to S3"`
 }
 
 var options Options
@@ -50,6 +51,14 @@ func makeS3Uploader(region, profile string) *s3manager.Uploader {
 	sess := session.MustMakeSession(region, profile)
 	s3Uploader := s3manager.NewUploader(sess)
 	return s3Uploader
+}
+
+func uploadS3() {
+	s3uploader := makeS3Uploader(options.Region, options.Profile)
+	err := securityhubcollector.WriteFindingsToS3(s3uploader, options.S3Bucket, options.S3Key, options.Outfile)
+	if err != nil {
+		log.Fatalf("could not write output to S3: %v", err)
+	}
 }
 
 // collectFindings is doing the bulk of our work here; it reads in the
@@ -79,12 +88,6 @@ func collectFindings() {
 		}
 	} else {
 		processFindings(0, acctMap, options.Profile, "")
-	}
-
-	s3uploader := makeS3Uploader(options.Region, options.Profile)
-	err = securityhubcollector.WriteFindingsToS3(s3uploader, options.S3Bucket, options.S3Key, options.Outfile)
-	if err != nil {
-		log.Fatalf("could not write output to S3: %v", err)
 	}
 }
 
@@ -124,6 +127,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not intialize logger: %v", err)
 	}
-
-	collectFindings()
+	if options.UploadFlag {
+		uploadS3()
+	} else {
+		collectFindings()
+	}
 }
