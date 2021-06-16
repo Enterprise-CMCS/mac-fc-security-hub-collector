@@ -13,6 +13,7 @@ security-hub-collector \
 
 security-hub-collector \
   -u \
+  -m teammap.json \
   -s $S3_BUCKET_PATH \
   ${S3_KEY:+-k "$S3_KEY"} \
   ${OUTPUT:+-o "$OUTPUT"}
