@@ -26,7 +26,7 @@ type Options struct {
 	S3Bucket    string `short:"s" long:"s3bucket" required:"false" description:"S3 bucket to use to upload results."`
 	S3Key       string `short:"k" long:"s3key" required:"false" description:"S3 bucket key, or path, to use to upload results."`
 	TeamMapFile string `short:"m" long:"teammap" required:"true" description:"JSON file containing team to account mappings."`
-	UploadFlag  bool   `short:"u" long:"upload-only" description:"flag to upload results to S3"`
+	UploadFlag  bool   `short:"u" long:"upload-only" description:"Use this flag to upload results to S3"`
 }
 
 var options Options
