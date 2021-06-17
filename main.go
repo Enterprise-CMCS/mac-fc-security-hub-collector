@@ -40,10 +40,9 @@ func makeHubClient(region, profile string, roleArn string) *securityhub.Security
 		creds := stscreds.NewCredentials(sess, roleArn)
 		hubClient := securityhub.New(sess, aws.NewConfig().WithCredentials(creds))
 		return hubClient
-	} else {
-		hubClient := securityhub.New(sess)
-		return hubClient
 	}
+	hubClient := securityhub.New(sess)
+	return hubClient
 }
 
 // makeS3Uploader establishes our session with AWS and creates S3 connection
@@ -80,7 +79,7 @@ func collectFindings() {
 		}
 	} else if options.AssumedRole != "" {
 		idx := 0
-		for account, _ := range acctMap {
+		for account := range acctMap {
 			log.Printf("%v: %v", idx, account)
 			roleArn := fmt.Sprintf("arn:aws:iam::%v:role/%v", account, options.AssumedRole)
 			processFindings(idx, acctMap, options.Profile, roleArn)
