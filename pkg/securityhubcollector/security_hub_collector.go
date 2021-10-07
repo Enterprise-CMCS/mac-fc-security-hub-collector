@@ -219,6 +219,11 @@ func (h *HubCollector) ConvertFindingToRows(finding *securityhub.AwsSecurityFind
 			record = append(record, *finding.Compliance.Status)
 		}
 		record = append(record, *finding.RecordState)
+		if finding.Workflow == nil {
+			record = append(record, "")
+		} else {
+			record = append(record, *finding.Workflow.Status)
+		}
 
 		// Each record *may* have multiple findings, so we make a list of
 		// records and that's what we'll output.
@@ -260,7 +265,7 @@ func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurity
 		// out the data we wanted from these findings changed regularly, w
 		// could make the headers/fields come from some sort of schema or struct,
 		// but for now this is good enough.
-		headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State"}
+		headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State", "Workflow Status"}
 
 		err = w.Write(headers)
 		if err != nil {
