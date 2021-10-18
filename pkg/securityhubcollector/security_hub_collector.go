@@ -203,7 +203,11 @@ func (h *HubCollector) ConvertFindingToRows(finding *securityhub.AwsSecurityFind
 			if finding.Remediation.Recommendation == nil {
 				record = append(record, "", "")
 			} else {
-				record = append(record, *finding.Remediation.Recommendation.Text)
+				if finding.Remediation.Recommendation.Text == nil {
+					record = append(record, "")
+				} else {
+					record = append(record, *finding.Remediation.Recommendation.Text)
+				}
 				if finding.Remediation.Recommendation.Url == nil {
 					record = append(record, "")
 				} else {
