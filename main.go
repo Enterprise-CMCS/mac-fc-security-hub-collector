@@ -38,7 +38,7 @@ func makeHubClient(region, profile string, roleArn string) *securityhub.Security
 	if roleArn != "" {
 		log.Printf("%v", roleArn)
 		creds := stscreds.NewCredentials(sess, roleArn)
-		hubClient := securityhub.New(sess, aws.NewConfig().WithCredentials(creds))
+		hubClient := securityhub.New(sess, aws.NewConfig().WithCredentials(creds).WithMaxRetries(10))
 		return hubClient
 	}
 	hubClient := securityhub.New(sess)
