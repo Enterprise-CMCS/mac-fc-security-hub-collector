@@ -228,7 +228,7 @@ func (h *HubCollector) ConvertFindingToRows(finding *securityhub.AwsSecurityFind
 		} else {
 			record = append(record, *finding.Workflow.Status)
 		}
-		record = append(record, *findings.CreatedAt)
+		record = append(record, *finding.CreatedAt)
 
 		// Each record *may* have multiple findings, so we make a list of
 		// records and that's what we'll output.
