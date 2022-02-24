@@ -209,6 +209,8 @@ func TestConvertFindingToRows(t *testing.T) {
 			"FAILED",
 			"ACTIVE",
 			"NEW",
+			"2020-03-22T13:22:13.933Z",
+			"2020-03-22T13:22:13.933Z",
 		},
 	}
 
@@ -226,6 +228,8 @@ func TestConvertFindingToRows(t *testing.T) {
 			"FAILED",
 			"ACTIVE",
 			"NEW",
+			"2020-03-22T13:22:13.933Z",
+			"2020-03-22T13:22:13.933Z",
 		},
 		{
 			"Test Team 1",
@@ -240,6 +244,8 @@ func TestConvertFindingToRows(t *testing.T) {
 			"FAILED",
 			"ACTIVE",
 			"NEW",
+			"2020-03-22T13:22:13.933Z",
+			"2020-03-22T13:22:13.933Z",
 		},
 	}
 
@@ -257,6 +263,8 @@ func TestConvertFindingToRows(t *testing.T) {
 			"",
 			"ACTIVE",
 			"NEW",
+			"2020-03-22T13:22:13.933Z",
+			"2020-03-22T13:22:13.933Z",
 		},
 	}
 
@@ -274,6 +282,8 @@ func TestConvertFindingToRows(t *testing.T) {
 			"FAILED",
 			"ACTIVE",
 			"SUPPRESSED",
+			"2020-03-22T13:22:13.933Z",
+			"2020-03-22T13:22:13.933Z",
 		},
 	}
 
