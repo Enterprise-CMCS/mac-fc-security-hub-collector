@@ -1,6 +1,9 @@
 package securityhubcollector
 
 import (
+	"bytes"
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/securityhub"
@@ -9,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"encoding/csv"
+	"encoding/gob"
 	"encoding/json"
 	"os"
 	"path"
@@ -141,6 +145,14 @@ func WriteFindingsToS3(s3uploader *s3manager.Uploader, s3bucket string, s3key st
 	return
 }
 
+func getRealSizeOf(v interface{}) (int, error) {
+	b := new(bytes.Buffer)
+	if err := gob.NewEncoder(b).Encode(v); err != nil {
+		return 0, err
+	}
+	return b.Len(), nil
+}
+
 // GetSecurityHubFindings - gets all security hub findings from a single AWS account
 func (h *HubCollector) GetSecurityHubFindings() ([]*securityhub.AwsSecurityFinding, error) {
 	var outputList []*securityhub.AwsSecurityFinding
@@ -163,8 +175,19 @@ func (h *HubCollector) GetSecurityHubFindings() ([]*securityhub.AwsSecurityFindi
 		},
 	}
 
+	now := time.Now()
+	numberOfCalls := 0
 	err := h.HubClient.GetFindingsPages(params,
 		func(page *securityhub.GetFindingsOutput, lastPage bool) bool {
+			elapsed := time.Since(now)
+			size, _ := getRealSizeOf(outputList)
+			numberOfCalls += 1
+
+			fmt.Println("Size of outputList in bytes:", size)
+			fmt.Println("Length of outputList: ", len(outputList))
+			fmt.Println("Number of calls: ", numberOfCalls)
+			fmt.Println("Elapsed time: ", elapsed)
+
 			outputList = append(outputList, page.Findings...)
 			return true
 		})
