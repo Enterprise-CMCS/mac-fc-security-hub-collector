@@ -1,12 +1,11 @@
 package securityhubcollector
 
 import (
+	"github.com/CMSGov/security-hub-collector/internal/aws/client"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/aws/aws-sdk-go/service/securityhub/securityhubiface"
-
-	"go.uber.org/zap"
 
 	"encoding/csv"
 	"encoding/json"
@@ -19,7 +18,6 @@ import (
 
 // HubCollector is a generic struct used to hold setting info
 type HubCollector struct {
-	Logger    *zap.Logger
 	HubClient securityhubiface.SecurityHubAPI
 	Outfile   string
 	AcctMap   map[string]string
@@ -141,10 +139,8 @@ func WriteFindingsToS3(s3uploader *s3manager.Uploader, s3bucket string, s3key st
 	return
 }
 
-// GetSecurityHubFindings - gets all security hub findings from a single AWS account
-func (h *HubCollector) GetSecurityHubFindings() ([]*securityhub.AwsSecurityFinding, error) {
-	var outputList []*securityhub.AwsSecurityFinding
-
+// ProcessFindings - gets all security hub findings from a single AWS account
+func (h *HubCollector) ProcessFindings(acctMap map[string]string, region string, profile string, roleArn string) error {
 	// We want all the security findings that are active and not resolved.
 	params := &securityhub.GetFindingsInput{
 		Filters: &securityhub.AwsSecurityFindingFilters{
@@ -161,19 +157,18 @@ func (h *HubCollector) GetSecurityHubFindings() ([]*securityhub.AwsSecurityFindi
 				},
 			},
 		},
+		MaxResults: aws.Int64(100),
 	}
 
-	err := h.HubClient.GetFindingsPages(params,
+	securityHubClient := client.SecurityHub(region, profile, roleArn)
+
+	err := securityHubClient.GetFindingsPages(params,
 		func(page *securityhub.GetFindingsOutput, lastPage bool) bool {
-			outputList = append(outputList, page.Findings...)
+			h.WriteFindingsToOutput(page.Findings)
 			return true
 		})
 
-	if err != nil {
-		return nil, err
-	}
-
-	return outputList, nil
+	return err
 }
 
 // ConvertFindingToRows - converts a single finding to the record format we're using
@@ -237,23 +232,13 @@ func (h *HubCollector) ConvertFindingToRows(finding *securityhub.AwsSecurityFind
 	}
 
 	return output
-
 }
 
-// WriteFindingsToOutput - takes a list of security
-func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurityFinding, writeHeaders bool) (err error) {
-	var f *os.File
-	if writeHeaders {
-		// Try to create the output file we got from the collector object
-		f, err = os.Create(h.Outfile)
-		if err != nil {
-			return err
-		}
-	} else {
-		f, err = os.OpenFile(h.Outfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-		if err != nil {
-			return err
-		}
+// WriteFindingsToOutput - writes headers to the output CSV file
+func (h *HubCollector) WriteHeadersToOutput() error {
+	f, err := os.OpenFile(h.Outfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
 	}
 
 	// This will automatically close the file when the function completes.
@@ -266,19 +251,37 @@ func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurity
 
 	w := csv.NewWriter(f)
 
-	if writeHeaders {
-		// For now, we're hardcoding the headers; in the future, if it turned
-		// out the data we wanted from these findings changed regularly, w
-		// could make the headers/fields come from some sort of schema or struct,
-		// but for now this is good enough.
-		headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State", "Workflow Status", "Created At", "Updated At"}
+	// For now, we're hardcoding the headers; in the future, if it turned
+	// out the data we wanted from these findings changed regularly, we
+	// could make the headers/fields come from some sort of schema or struct,
+	// but for now this is good enough.
+	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State", "Workflow Status", "Created At", "Updated At"}
 
-		err = w.Write(headers)
-		if err != nil {
-			return err
-		}
-		w.Flush()
+	err = w.Write(headers)
+	if err != nil {
+		return err
 	}
+	w.Flush()
+
+	return nil
+}
+
+// WriteFindingsToOutput - takes a list of security findings and writes them to the output file.
+func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurityFinding) error {
+	f, err := os.OpenFile(h.Outfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+
+	// This will automatically close the file when the function completes.
+	defer func() {
+		cerr := f.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+
+	w := csv.NewWriter(f)
 
 	// For each finding, we put it through the conversion function, which
 	// can generate multiple rows (due to multiple resources. For each row,
@@ -294,5 +297,5 @@ func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurity
 		}
 	}
 
-	return
+	return nil
 }
