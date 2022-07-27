@@ -58,18 +58,16 @@ func collectFindings() {
 	if len(profiles) > 0 {
 		for idx, profile := range profiles {
 			log.Printf("%v: %v", idx, profile)
-			h.ProcessFindings(acctMap, options.Region, profile, "")
+			h.ProcessFindings(options.Region, profile, "")
 		}
 	} else if options.AssumedRole != "" {
-		idx := 0
 		for account := range acctMap {
-			log.Printf("%v: %v", idx, account)
+			log.Printf("%v", account)
 			roleArn := fmt.Sprintf("arn:aws:iam::%v:role/%v", account, options.AssumedRole)
-			h.ProcessFindings(acctMap, options.Region, options.Profile, roleArn)
-			idx++
+			h.ProcessFindings(options.Region, options.Profile, roleArn)
 		}
 	} else {
-		h.ProcessFindings(acctMap, options.Region, options.Profile, "")
+		h.ProcessFindings(options.Region, options.Profile, "")
 	}
 }
 

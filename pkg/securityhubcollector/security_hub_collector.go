@@ -140,7 +140,7 @@ func WriteFindingsToS3(s3uploader *s3manager.Uploader, s3bucket string, s3key st
 }
 
 // ProcessFindings - gets all security hub findings from a single AWS account
-func (h *HubCollector) ProcessFindings(acctMap map[string]string, region string, profile string, roleArn string) error {
+func (h *HubCollector) ProcessFindings(region string, profile string, roleArn string) error {
 	// We want all the security findings that are active and not resolved.
 	params := &securityhub.GetFindingsInput{
 		Filters: &securityhub.AwsSecurityFindingFilters{
