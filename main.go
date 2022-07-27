@@ -25,7 +25,7 @@ type Options struct {
 
 var options Options
 
-func UploadS3() {
+func uploadS3() {
 	s3uploader := client.S3Uploader(options.Region, options.Profile)
 	err := securityhubcollector.WriteFindingsToS3(s3uploader, options.S3Bucket, options.S3Key, options.Outfile)
 	if err != nil {
@@ -72,7 +72,6 @@ func collectFindings() {
 }
 
 func main() {
-
 	// Parse out command line options:
 	parser := flag.NewParser(&options, flag.Default)
 	_, err := parser.Parse()
@@ -81,7 +80,7 @@ func main() {
 	}
 
 	if options.UploadFlag {
-		UploadS3()
+		uploadS3()
 	} else {
 		collectFindings()
 	}
