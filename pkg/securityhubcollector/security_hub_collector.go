@@ -1,14 +1,16 @@
 package securityhubcollector
 
 import (
-	"github.com/CMSGov/security-hub-collector/internal/aws/client"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/aws/aws-sdk-go/service/securityhub/securityhubiface"
 
+	"github.com/CMSGov/security-hub-collector/internal/aws/client"
+
 	"encoding/csv"
 	"encoding/json"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -140,7 +142,7 @@ func WriteFindingsToS3(s3uploader *s3manager.Uploader, s3bucket string, s3key st
 }
 
 // ProcessFindings - gets all security hub findings from a single AWS account
-func (h *HubCollector) ProcessFindings(region string, profile string, roleArn string) error {
+func (h *HubCollector) ProcessFindings(region string, profile string, roleArn string) {
 	// We want all the security findings that are active and not resolved.
 	params := &securityhub.GetFindingsInput{
 		Filters: &securityhub.AwsSecurityFindingFilters{
@@ -164,11 +166,15 @@ func (h *HubCollector) ProcessFindings(region string, profile string, roleArn st
 
 	err := securityHubClient.GetFindingsPages(params,
 		func(page *securityhub.GetFindingsOutput, lastPage bool) bool {
-			h.WriteFindingsToOutput(page.Findings)
+			err := h.WriteFindingsToOutput(page.Findings)
+			if err != nil {
+				log.Fatalf("Error writing findings to output: %s\n", err)
+			}
 			return true
 		})
-
-	return err
+	if err != nil {
+		log.Fatal("Error getting Security Hub findings: \n", err)
+	}
 }
 
 // ConvertFindingToRows - converts a single finding to the record format we're using
@@ -234,7 +240,7 @@ func (h *HubCollector) ConvertFindingToRows(finding *securityhub.AwsSecurityFind
 	return output
 }
 
-// WriteFindingsToOutput - writes headers to the output CSV file
+// WriteHeadersToOutput - writes headers to the output CSV file
 func (h *HubCollector) WriteHeadersToOutput() error {
 	f, err := os.OpenFile(h.Outfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
