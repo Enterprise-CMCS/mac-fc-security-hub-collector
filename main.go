@@ -45,8 +45,8 @@ func collectFindings() {
 
 	// flush the buffer and close the file when the function completes.
 	defer func() {
-		err := h.FlushAndClose()
-		if err != nil {
+		ferr := h.FlushAndClose()
+		if ferr != nil {
 			log.Fatalf("could not flush buffer and close output file: %v", err)
 		}
 	}()
@@ -70,14 +70,14 @@ func collectFindings() {
 		for account := range h.AcctMap {
 			log.Printf("getting findings for account %v", account)
 			roleArn := fmt.Sprintf("arn:aws:iam::%v:role/%v", account, options.AssumedRole)
-			h.GetAndWriteFindingsToOutput(options.Region, options.DefaultProfile, roleArn)
+			err = h.GetAndWriteFindingsToOutput(options.Region, options.DefaultProfile, roleArn)
 			if err != nil {
 				log.Fatalf("could not get findings for account %v: %v", account, err)
 			}
 		}
 	} else {
 		// If we have no defined profiles or assumed role, get findings for the default profile
-		h.GetAndWriteFindingsToOutput(options.Region, options.DefaultProfile, "")
+		err = h.GetAndWriteFindingsToOutput(options.Region, options.DefaultProfile, "")
 		if err != nil {
 			log.Fatalf("could not get findings: %v", err)
 		}

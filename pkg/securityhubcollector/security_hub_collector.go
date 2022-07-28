@@ -220,7 +220,7 @@ func (h *HubCollector) GetAndWriteFindingsToOutput(region string, profile string
 		func(page *securityhub.GetFindingsOutput, lastPage bool) bool {
 			writeErr := h.writeFindingsToOutput(page.Findings)
 			if writeErr != nil {
-				err = fmt.Errorf("could not write findings to output: %s\n", writeErr)
+				err = fmt.Errorf("could not write findings to output: %s", writeErr)
 				return false
 			}
 			return true
