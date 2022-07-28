@@ -14,7 +14,7 @@ import (
 // Options describes the command line options available.
 type Options struct {
 	AssumedRole    string `short:"a" long:"assumedrole" required:"false" description:"Role name to assume when collecting across all accounts."`
-	Outfile        string `short:"o" long:"output" required:"false" description:"File to direct output to." default:"SecurityHub-Findings.csv"`
+	OutputFileName string `short:"o" long:"output" required:"false" description:"File to direct output to." default:"SecurityHub-Findings.csv"`
 	DefaultProfile string `short:"p" long:"profile" env:"AWS_PROFILE" required:"false" description:"The default AWS profile to use. Overridden if profiles are specified in the team map."`
 	Region         string `short:"r" long:"region" env:"AWS_REGION" required:"false" description:"The AWS region to use."`
 	S3Bucket       string `short:"s" long:"s3bucket" required:"false" description:"S3 bucket to use to upload results."`
@@ -27,36 +27,38 @@ var options Options
 
 func uploadS3() {
 	s3uploader := client.S3Uploader(options.Region, options.DefaultProfile)
-	err := securityhubcollector.WriteFindingsToS3(s3uploader, options.S3Bucket, options.S3Key, options.Outfile)
+	err := securityhubcollector.WriteFindingsToS3(s3uploader, options.S3Bucket, options.S3Key, options.OutputFileName)
 	if err != nil {
 		log.Fatalf("could not write output to S3: %v", err)
 	}
 }
 
 // collectFindings is doing the bulk of our work here; it reads in the
-// team map JSON file, builds the HubCollector object, and processes findings
-// for each account in the team map.
+// team map JSON file, builds the HubCollector object, writes headers to the output file, and processes findings
+// depending on the definitions in the team map and the CLI options.
 func collectFindings() {
-	teamMap, err := securityhubcollector.ReadTeamMap(options.TeamMapFile)
+	h := securityhubcollector.HubCollector{}
+	err := h.Initialize(options.TeamMapFile, options.OutputFileName)
 	if err != nil {
-		log.Fatalf("could not parse team map: %v", err)
+		log.Fatalf("could not initialize HubCollector: %v", err)
 	}
 
-	profiles := securityhubcollector.BuildProfileList(teamMap)
-	acctMap := securityhubcollector.BuildAcctMap(teamMap)
-
-	h := securityhubcollector.HubCollector{
-		Outfile: options.Outfile,
-		AcctMap: acctMap,
-	}
+	// flush the buffer and close the file when the function completes.
+	defer func() {
+		err := h.FlushAndClose()
+		if err != nil {
+			log.Fatalf("could not flush buffer and close output file: %v", err)
+		}
+	}()
 
 	err = h.WriteHeadersToOutput()
 	if err != nil {
 		log.Fatalf("could not write headers to output file: %v", err)
 	}
 
-	if len(profiles) > 0 {
-		for _, profile := range profiles {
+	if len(h.Profiles) > 0 {
+		// If we have defined profiles, get findings for each profile
+		for _, profile := range h.Profiles {
 			log.Printf("getting findings for profile %v", profile)
 			err = h.GetAndWriteFindingsToOutput(options.Region, profile, "")
 			if err != nil {
@@ -64,7 +66,8 @@ func collectFindings() {
 			}
 		}
 	} else if options.AssumedRole != "" {
-		for account := range acctMap {
+		// If we have a defined assumed role, get findings for each account in the team map
+		for account := range h.AcctMap {
 			log.Printf("getting findings for account %v", account)
 			roleArn := fmt.Sprintf("arn:aws:iam::%v:role/%v", account, options.AssumedRole)
 			h.GetAndWriteFindingsToOutput(options.Region, options.DefaultProfile, roleArn)
@@ -73,6 +76,7 @@ func collectFindings() {
 			}
 		}
 	} else {
+		// If we have no defined profiles or assumed role, get findings for the default profile
 		h.GetAndWriteFindingsToOutput(options.Region, options.DefaultProfile, "")
 		if err != nil {
 			log.Fatalf("could not get findings: %v", err)

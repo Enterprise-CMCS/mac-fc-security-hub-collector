@@ -21,9 +21,11 @@ import (
 
 // HubCollector is a generic struct used to hold setting info
 type HubCollector struct {
-	HubClient securityhubiface.SecurityHubAPI
-	Outfile   string
-	AcctMap   map[string]string
+	HubClient  securityhubiface.SecurityHubAPI
+	AcctMap    map[string]string
+	Profiles   []string
+	OutputFile *os.File
+	CSVWriter  *csv.Writer
 }
 
 // Teams is a struct describing the format we expect in the JSON file
@@ -40,9 +42,57 @@ type Team struct {
 	Profiles []string `json:"profiles"`
 }
 
-// ReadTeamMap - takes the JSON encoded file that maps teams to accounts
+// Initialize sets up the HubCollector object
+func (h *HubCollector) Initialize(teamMapFile string, outputFileName string) error {
+	// set account and profile properties
+	teamMap, err := readTeamMap(teamMapFile)
+	if err != nil {
+		return fmt.Errorf("could not parse team map: %v", err)
+	}
+	h.AcctMap = buildAcctMap(teamMap)
+	h.Profiles = buildProfileList(teamMap)
+
+	// create the output file and CSV writer
+	f, err := os.Create(outputFileName)
+	if err != nil {
+		return fmt.Errorf("could not create output file: %v", err)
+	}
+	h.OutputFile = f
+	h.CSVWriter = csv.NewWriter(h.OutputFile)
+
+	return nil
+}
+
+// isInitialized checks if the HubCollector has the required properties to perform file IO
+func (h *HubCollector) isInitialized() bool {
+	return h.OutputFile != nil && h.CSVWriter != nil
+}
+
+// FlushAndClose flushes the CSV writer and closes the output file
+func (h *HubCollector) FlushAndClose() error {
+	if !h.isInitialized() {
+		return fmt.Errorf("HubCollector is not initialized")
+	}
+
+	h.CSVWriter.Flush()
+	err := h.CSVWriter.Error()
+	if err != nil {
+		return fmt.Errorf("could not flush CSV writer: %v", err)
+	}
+	h.CSVWriter = nil
+
+	err = h.OutputFile.Close()
+	if err != nil {
+		return fmt.Errorf("could not close output file: %v", err)
+	}
+	h.OutputFile = nil
+
+	return nil
+}
+
+// readTeamMap - takes the JSON encoded file that maps teams to accounts
 // and converts it into a Teams object that we can use later.
-func ReadTeamMap(jsonFile string) (jsonTeams Teams, err error) {
+func readTeamMap(jsonFile string) (jsonTeams Teams, err error) {
 	jsonFile = filepath.Clean(jsonFile)
 
 	// gosec complains here because we're essentially letting you open
@@ -66,13 +116,13 @@ func ReadTeamMap(jsonFile string) (jsonTeams Teams, err error) {
 
 }
 
-// BuildAcctMap - builds a map of accounts to teams from a map of teams
+// buildAcctMap - builds a map of accounts to teams from a map of teams
 // to accounts. The JSON file (and the Teams object we extract from it)
 // maps teams to a list of accounts (because that is easiest for humans),
 // but what we really want for building our output is to have a mapping
 // of accounts to teams, because accounts are what we actually get from
 // the security hub finding.
-func BuildAcctMap(jsonTeams Teams) map[string]string {
+func buildAcctMap(jsonTeams Teams) map[string]string {
 	acctMap := make(map[string]string)
 
 	for _, team := range jsonTeams.Teams {
@@ -84,8 +134,8 @@ func BuildAcctMap(jsonTeams Teams) map[string]string {
 	return acctMap
 }
 
-// BuildProfileList - builds a list of all the AWS profiles to use to gather data
-func BuildProfileList(jsonTeams Teams) []string {
+// buildProfileList - builds a list of all the AWS profiles to use to gather data
+func buildProfileList(jsonTeams Teams) []string {
 	var profileList []string
 
 	for _, team := range jsonTeams.Teams {
@@ -170,7 +220,7 @@ func (h *HubCollector) GetAndWriteFindingsToOutput(region string, profile string
 		func(page *securityhub.GetFindingsOutput, lastPage bool) bool {
 			writeErr := h.writeFindingsToOutput(page.Findings)
 			if writeErr != nil {
-				err = fmt.Errorf("could not write findings to output: %s\n", err)
+				err = fmt.Errorf("could not write findings to output: %s\n", writeErr)
 				return false
 			}
 			return true
@@ -179,8 +229,8 @@ func (h *HubCollector) GetAndWriteFindingsToOutput(region string, profile string
 	return err
 }
 
-// ConvertFindingToRows - converts a single finding to the record format we're using
-func (h *HubCollector) ConvertFindingToRows(finding *securityhub.AwsSecurityFinding) [][]string {
+// convertFindingToRows - converts a single finding to the record format we're using
+func (h *HubCollector) convertFindingToRows(finding *securityhub.AwsSecurityFinding) [][]string {
 	var output [][]string
 
 	// Each finding may have multiple resources, so we need to iterate through
@@ -244,20 +294,9 @@ func (h *HubCollector) ConvertFindingToRows(finding *securityhub.AwsSecurityFind
 
 // WriteHeadersToOutput - writes headers to the output CSV file
 func (h *HubCollector) WriteHeadersToOutput() error {
-	f, err := os.OpenFile(h.Outfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-	if err != nil {
-		return err
+	if !h.isInitialized() {
+		return fmt.Errorf("HubCollector is not initialized")
 	}
-
-	// This will automatically close the file when the function completes.
-	defer func() {
-		cerr := f.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
-
-	w := csv.NewWriter(f)
 
 	// For now, we're hardcoding the headers; in the future, if it turned
 	// out the data we wanted from these findings changed regularly, we
@@ -265,43 +304,28 @@ func (h *HubCollector) WriteHeadersToOutput() error {
 	// but for now this is good enough.
 	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State", "Workflow Status", "Created At", "Updated At"}
 
-	err = w.Write(headers)
+	err := h.CSVWriter.Write(headers)
 	if err != nil {
 		return err
 	}
-	w.Flush()
+	h.CSVWriter.Flush()
 
 	return nil
 }
 
 // writeFindingsToOutput - takes a list of security findings and writes them to the output file.
 func (h *HubCollector) writeFindingsToOutput(findings []*securityhub.AwsSecurityFinding) error {
-	f, err := os.OpenFile(h.Outfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-	if err != nil {
-		return err
+	if !h.isInitialized() {
+		return fmt.Errorf("HubCollector is not initialized")
 	}
 
-	// This will automatically close the file when the function completes.
-	defer func() {
-		cerr := f.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
-
-	w := csv.NewWriter(f)
-
-	// For each finding, we put it through the conversion function, which
-	// can generate multiple rows (due to multiple resources. For each row,
-	// we write it to the file and be done with it.
 	for _, finding := range findings {
-		records := h.ConvertFindingToRows(finding)
+		records := h.convertFindingToRows(finding)
 		for _, record := range records {
-			err = w.Write(record)
+			err := h.CSVWriter.Write(record)
 			if err != nil {
 				return err
 			}
-			w.Flush()
 		}
 	}
 

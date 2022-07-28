@@ -147,8 +147,7 @@ var exampleTeamMap = Teams{
 func testHubCollector(hubclient securityhubiface.SecurityHubAPI) HubCollector {
 	output := HubCollector{
 		HubClient: hubclient,
-		Outfile:   "test-output.csv",
-		AcctMap:   BuildAcctMap(exampleTeamMap),
+		AcctMap:   buildAcctMap(exampleTeamMap),
 	}
 
 	return output
@@ -284,19 +283,19 @@ func TestConvertFindingToRows(t *testing.T) {
 
 	h := testHubCollector(&mockSecurityHubClient{})
 
-	if !outputEqual(h.ConvertFindingToRows(activeSecurityFinding), activeExpect) {
+	if !outputEqual(h.convertFindingToRows(activeSecurityFinding), activeExpect) {
 		t.Errorf("ERROR: Active finding conversion does not match expectations")
 	}
 
-	if !outputEqual(h.ConvertFindingToRows(multiResourceSecurityFinding), multiResourceExpect) {
+	if !outputEqual(h.convertFindingToRows(multiResourceSecurityFinding), multiResourceExpect) {
 		t.Errorf("ERROR: MultiResource finding conversion does not match expectations")
 	}
 
-	if !outputEqual(h.ConvertFindingToRows(noComplianceSecurityFinding), noComplianceExpect) {
+	if !outputEqual(h.convertFindingToRows(noComplianceSecurityFinding), noComplianceExpect) {
 		t.Errorf("ERROR: NoCompliance finding conversion does not match expectations")
 	}
 
-	if !outputEqual(h.ConvertFindingToRows(suppressedSecurityFinding), suppressedExpect) {
+	if !outputEqual(h.convertFindingToRows(suppressedSecurityFinding), suppressedExpect) {
 		t.Errorf("ERROR: Suppressed finding conversion does not match expectations")
 	}
 
@@ -311,7 +310,7 @@ func TestBuildAcctMap(t *testing.T) {
 		"000000000022": "Test Team 2",
 	}
 
-	generatedMap := BuildAcctMap(exampleTeamMap)
+	generatedMap := buildAcctMap(exampleTeamMap)
 
 	for _, acct := range generatedMap {
 		if acctMapExpect[acct] != generatedMap[acct] {
@@ -321,7 +320,7 @@ func TestBuildAcctMap(t *testing.T) {
 }
 
 func TestReadTeamMap(t *testing.T) {
-	extractedTeamMap, err := ReadTeamMap("team_map_test.json")
+	extractedTeamMap, err := readTeamMap("team_map_test.json")
 	if err != nil {
 		t.Errorf("ERROR: could not extract team map from test file")
 	}
