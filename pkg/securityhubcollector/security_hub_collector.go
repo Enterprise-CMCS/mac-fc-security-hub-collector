@@ -1,6 +1,8 @@
 package securityhubcollector
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/securityhub"
@@ -10,7 +12,6 @@ import (
 
 	"encoding/csv"
 	"encoding/json"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -141,8 +142,8 @@ func WriteFindingsToS3(s3uploader *s3manager.Uploader, s3bucket string, s3key st
 	return
 }
 
-// ProcessFindings - gets all security hub findings from a single AWS account
-func (h *HubCollector) ProcessFindings(region string, profile string, roleArn string) {
+// GetAndWriteFindingsToOutput - gets all security hub findings from a single AWS account and writes them to the output file
+func (h *HubCollector) GetAndWriteFindingsToOutput(region string, profile string, roleArn string) error {
 	// We want all the security findings that are active and not resolved.
 	params := &securityhub.GetFindingsInput{
 		Filters: &securityhub.AwsSecurityFindingFilters{
@@ -162,19 +163,20 @@ func (h *HubCollector) ProcessFindings(region string, profile string, roleArn st
 		MaxResults: aws.Int64(100),
 	}
 
+	var err error
 	securityHubClient := client.SecurityHub(region, profile, roleArn)
 
-	err := securityHubClient.GetFindingsPages(params,
+	err = securityHubClient.GetFindingsPages(params,
 		func(page *securityhub.GetFindingsOutput, lastPage bool) bool {
-			err := h.WriteFindingsToOutput(page.Findings)
-			if err != nil {
-				log.Fatalf("Error writing findings to output: %s\n", err)
+			writeErr := h.writeFindingsToOutput(page.Findings)
+			if writeErr != nil {
+				err = fmt.Errorf("could not write findings to output: %s\n", err)
+				return false
 			}
 			return true
 		})
-	if err != nil {
-		log.Fatal("Error getting Security Hub findings: \n", err)
-	}
+
+	return err
 }
 
 // ConvertFindingToRows - converts a single finding to the record format we're using
@@ -272,8 +274,8 @@ func (h *HubCollector) WriteHeadersToOutput() error {
 	return nil
 }
 
-// WriteFindingsToOutput - takes a list of security findings and writes them to the output file.
-func (h *HubCollector) WriteFindingsToOutput(findings []*securityhub.AwsSecurityFinding) error {
+// writeFindingsToOutput - takes a list of security findings and writes them to the output file.
+func (h *HubCollector) writeFindingsToOutput(findings []*securityhub.AwsSecurityFinding) error {
 	f, err := os.OpenFile(h.Outfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return err

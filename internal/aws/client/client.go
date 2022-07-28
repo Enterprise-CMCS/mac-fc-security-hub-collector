@@ -1,8 +1,6 @@
 package client
 
 import (
-	"log"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -38,7 +36,6 @@ func mustMakeSession(region, profile string) *session.Session {
 func SecurityHub(region, profile string, roleArn string) *securityhub.SecurityHub {
 	sess := mustMakeSession(region, profile)
 	if roleArn != "" {
-		log.Printf("%v", roleArn)
 		creds := stscreds.NewCredentials(sess, roleArn)
 		hubClient := securityhub.New(sess, aws.NewConfig().WithCredentials(creds).WithMaxRetries(10))
 		return hubClient
