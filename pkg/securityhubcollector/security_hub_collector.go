@@ -4,53 +4,27 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/securityhub"
 	"github.com/aws/aws-sdk-go/service/securityhub/securityhubiface"
 
 	"github.com/CMSGov/security-hub-collector/internal/aws/client"
 
 	"encoding/csv"
-	"encoding/json"
 	"os"
-	"path"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 // HubCollector is a generic struct used to hold setting info
 type HubCollector struct {
 	HubClient  securityhubiface.SecurityHubAPI
-	AcctMap    map[string]string
-	Profiles   []string
 	OutputFile *os.File
 	CSVWriter  *csv.Writer
 }
 
-// Teams is a struct describing the format we expect in the JSON file
-// describing the team mappings
-type Teams struct {
-	Teams []Team `json:"teams"`
-}
-
-// Team is a struct describing a single team and its accounts as we
-// expect in the JSON file describing team mappings
-type Team struct {
-	Name     string   `json:"name"`
-	Accounts []string `json:"accounts"`
-	Profiles []string `json:"profiles"`
-}
-
-// Initialize sets up the HubCollector object
-func (h *HubCollector) Initialize(teamMapFile string, outputFileName string) error {
-	// set account and profile properties
-	teamMap, err := readTeamMap(teamMapFile)
-	if err != nil {
-		return fmt.Errorf("could not parse team map: %v", err)
+// Initialize sets up the HubCollector object and writes the header row to the output file.
+func (h *HubCollector) Initialize(outputFileName string) error {
+	if h.isInitialized() {
+		return fmt.Errorf("HubCollector is already initialized")
 	}
-	h.AcctMap = buildAcctMap(teamMap)
-	h.Profiles = buildProfileList(teamMap)
 
 	// create the output file and CSV writer
 	f, err := os.Create(outputFileName)
@@ -59,6 +33,11 @@ func (h *HubCollector) Initialize(teamMapFile string, outputFileName string) err
 	}
 	h.OutputFile = f
 	h.CSVWriter = csv.NewWriter(h.OutputFile)
+
+	err = h.writeHeadersToOutput()
+	if err != nil {
+		return fmt.Errorf("could not write headers to output file: %v", err)
+	}
 
 	return nil
 }
@@ -90,110 +69,8 @@ func (h *HubCollector) FlushAndClose() error {
 	return nil
 }
 
-// readTeamMap - takes the JSON encoded file that maps teams to accounts
-// and converts it into a Teams object that we can use later.
-func readTeamMap(jsonFile string) (jsonTeams Teams, err error) {
-	jsonFile = filepath.Clean(jsonFile)
-
-	// gosec complains here because we're essentially letting you open
-	// any file you want, which if this was a webapp would be pretty
-	// sketchy. However, since this is a CLI tool, and you shouldn't be
-	// able to open a file you don't have permission for anyway, we can
-	// safely ignore its complaints here.
-	// #nosec
-	f, err := os.Open(jsonFile)
-
-	defer func() {
-		cerr := f.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
-
-	err = json.NewDecoder(f).Decode(&jsonTeams)
-
-	return
-
-}
-
-// buildAcctMap - builds a map of accounts to teams from a map of teams
-// to accounts. The JSON file (and the Teams object we extract from it)
-// maps teams to a list of accounts (because that is easiest for humans),
-// but what we really want for building our output is to have a mapping
-// of accounts to teams, because accounts are what we actually get from
-// the security hub finding.
-func buildAcctMap(jsonTeams Teams) map[string]string {
-	acctMap := make(map[string]string)
-
-	for _, team := range jsonTeams.Teams {
-		for _, acct := range team.Accounts {
-			acctMap[acct] = team.Name
-		}
-	}
-
-	return acctMap
-}
-
-// buildProfileList - builds a list of all the AWS profiles to use to gather data
-func buildProfileList(jsonTeams Teams) []string {
-	var profileList []string
-
-	for _, team := range jsonTeams.Teams {
-		for _, profile := range team.Profiles {
-			profileList = append(profileList, profile)
-		}
-	}
-
-	return profileList
-}
-
-// WriteFindingsToS3 - Writes the finding results file to an S3 bucket
-func WriteFindingsToS3(s3uploader *s3manager.Uploader, s3bucket string, s3key string, outfile string) (err error) {
-	// if we got a bucket, let's try to upload
-	if s3bucket != "" {
-
-		// use Outfile name as the key by default
-		key := outfile
-		// if the passed in key exists, use that
-		if s3key != "" {
-			key = s3key
-		}
-
-		// Carve up things and throw in timestamp in the key
-		current := time.Now()
-		suffix := current.Format("2006-01-02_15.04.05")
-		ext := path.Ext(key)
-		fn := strings.TrimSuffix(key, ext)
-		key = fn + "_" + suffix + ext
-
-		// open our local file for reading
-		f, err := os.Open(outfile) //nolint
-		if err != nil {
-			return err
-		}
-
-		// This will automatically close the file when the function completes.
-		defer func() {
-			cerr := f.Close()
-			if err == nil {
-				err = cerr
-			}
-		}()
-
-		upParams := &s3manager.UploadInput{
-			Bucket: aws.String(s3bucket),
-			Key:    aws.String(key),
-			Body:   f,
-		}
-		_, err = s3uploader.Upload(upParams)
-		return err
-	}
-
-	return
-}
-
-// GetAndWriteFindingsToOutput - gets all security hub findings from a single AWS account and writes them to the output file
-func (h *HubCollector) GetAndWriteFindingsToOutput(region string, profile string, roleArn string) error {
+// GetFindingsAndWriteToOutput - gets all security hub findings from a single AWS account and writes them to the output file
+func (h *HubCollector) GetFindingsAndWriteToOutput(region string, profile string, roleArn string, teamName string) error {
 	// We want all the security findings that are active and not resolved.
 	params := &securityhub.GetFindingsInput{
 		Filters: &securityhub.AwsSecurityFindingFilters{
@@ -218,7 +95,7 @@ func (h *HubCollector) GetAndWriteFindingsToOutput(region string, profile string
 
 	err = securityHubClient.GetFindingsPages(params,
 		func(page *securityhub.GetFindingsOutput, lastPage bool) bool {
-			writeErr := h.writeFindingsToOutput(page.Findings)
+			writeErr := h.writeFindingsToOutput(page.Findings, teamName)
 			if writeErr != nil {
 				err = fmt.Errorf("could not write findings to output: %s", writeErr)
 				return false
@@ -230,7 +107,7 @@ func (h *HubCollector) GetAndWriteFindingsToOutput(region string, profile string
 }
 
 // convertFindingToRows - converts a single finding to the record format we're using
-func (h *HubCollector) convertFindingToRows(finding *securityhub.AwsSecurityFinding) [][]string {
+func (h *HubCollector) convertFindingToRows(finding *securityhub.AwsSecurityFinding, teamName string) [][]string {
 	var output [][]string
 
 	// Each finding may have multiple resources, so we need to iterate through
@@ -241,7 +118,7 @@ func (h *HubCollector) convertFindingToRows(finding *securityhub.AwsSecurityFind
 		// the row we want to output into the CSV for this resource in
 		// the finding.
 		var record []string
-		record = append(record, h.AcctMap[*finding.AwsAccountId])
+		record = append(record, teamName)
 		record = append(record, *r.Type)
 		record = append(record, *finding.Title)
 		record = append(record, *finding.Description)
@@ -292,8 +169,8 @@ func (h *HubCollector) convertFindingToRows(finding *securityhub.AwsSecurityFind
 	return output
 }
 
-// WriteHeadersToOutput - writes headers to the output CSV file
-func (h *HubCollector) WriteHeadersToOutput() error {
+// writeHeadersToOutput - writes headers to the output CSV file
+func (h *HubCollector) writeHeadersToOutput() error {
 	if !h.isInitialized() {
 		return fmt.Errorf("HubCollector is not initialized")
 	}
@@ -308,19 +185,18 @@ func (h *HubCollector) WriteHeadersToOutput() error {
 	if err != nil {
 		return err
 	}
-	h.CSVWriter.Flush()
 
 	return nil
 }
 
 // writeFindingsToOutput - takes a list of security findings and writes them to the output file.
-func (h *HubCollector) writeFindingsToOutput(findings []*securityhub.AwsSecurityFinding) error {
+func (h *HubCollector) writeFindingsToOutput(findings []*securityhub.AwsSecurityFinding, teamName string) error {
 	if !h.isInitialized() {
 		return fmt.Errorf("HubCollector is not initialized")
 	}
 
 	for _, finding := range findings {
-		records := h.convertFindingToRows(finding)
+		records := h.convertFindingToRows(finding, teamName)
 		for _, record := range records {
 			err := h.CSVWriter.Write(record)
 			if err != nil {
