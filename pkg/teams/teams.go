@@ -45,6 +45,7 @@ func ReadTeamMap(filePath string) (teams Teams, err error) {
 	return
 }
 
+// AccountsToTeamNames returns a map of accounts to team names
 func (t *Teams) AccountsToTeamNames() map[string]string {
 	var a = make(map[string]string)
 	for _, team := range t.Teams {
@@ -55,6 +56,7 @@ func (t *Teams) AccountsToTeamNames() map[string]string {
 	return a
 }
 
+// ProfilesToTeamNames returns a map of profiles to team names
 func (t *Teams) ProfilesToTeamNames() map[string]string {
 	var p = make(map[string]string)
 	for _, team := range t.Teams {

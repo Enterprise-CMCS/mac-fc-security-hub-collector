@@ -7,11 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+
 	"github.com/CMSGov/security-hub-collector/internal/aws/client"
 	"github.com/CMSGov/security-hub-collector/pkg/securityhubcollector"
 	"github.com/CMSGov/security-hub-collector/pkg/teams"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 
 	flag "github.com/jessevdk/go-flags"
 
