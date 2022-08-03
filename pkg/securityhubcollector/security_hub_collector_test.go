@@ -5,12 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/securityhub"
-	"github.com/aws/aws-sdk-go/service/securityhub/securityhubiface"
 )
-
-type mockSecurityHubClient struct {
-	securityhubiface.SecurityHubAPI
-}
 
 // This is an active security finding that is the most basic that we're
 // likely to see from Security Hub and is a type we want to actually see.
