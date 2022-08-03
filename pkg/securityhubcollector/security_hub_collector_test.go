@@ -128,16 +128,6 @@ var suppressedSecurityFinding = &securityhub.AwsSecurityFinding{
 	Compliance: &securityhub.Compliance{Status: aws.String("FAILED")},
 }
 
-// This is a helper function to create a new HubCollector object; we're
-// doing this so creating a new HubCollector object is easy in tests.
-func testHubCollector(hubclient securityhubiface.SecurityHubAPI) HubCollector {
-	output := HubCollector{
-		HubClient: hubclient,
-	}
-
-	return output
-}
-
 // We have to make our own function to test whether our expected outputs
 // are equal.
 func outputEqual(a, b [][]string) bool {
@@ -249,7 +239,7 @@ func TestConvertFindingToRows(t *testing.T) {
 		},
 	}
 
-	h := testHubCollector(&mockSecurityHubClient{})
+	h := HubCollector{}
 	teamName := "Test Team 1"
 
 	if !outputEqual(h.convertFindingToRows(activeSecurityFinding, teamName), activeExpect) {

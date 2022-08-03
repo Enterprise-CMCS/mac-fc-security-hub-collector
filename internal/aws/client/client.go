@@ -44,8 +44,8 @@ func SecurityHub(region, profile string, roleArn string) *securityhub.SecurityHu
 	return hubClient
 }
 
-// S3Uploader establishes our session with AWS and creates S3 connection
-func S3Uploader(region, profile string) *s3manager.Uploader {
+// MustMakeS3Uploader establishes our session with AWS and creates S3 connection
+func MustMakeS3Uploader(region, profile string) *s3manager.Uploader {
 	sess := mustMakeSession(region, profile)
 	s3Uploader := s3manager.NewUploader(sess)
 	return s3Uploader

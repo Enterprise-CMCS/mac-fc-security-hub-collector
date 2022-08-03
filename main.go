@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 
 	"github.com/CMSGov/security-hub-collector/internal/aws/client"
+	"github.com/CMSGov/security-hub-collector/pkg/helpers"
 	"github.com/CMSGov/security-hub-collector/pkg/securityhubcollector"
 	"github.com/CMSGov/security-hub-collector/pkg/teams"
 
@@ -34,7 +35,7 @@ type Options struct {
 var options Options
 
 func uploadS3() {
-	s3uploader := client.S3Uploader(options.Region, options.DefaultProfile)
+	s3uploader := client.MustMakeS3Uploader(options.Region, options.DefaultProfile)
 	err := writeFindingsToS3(s3uploader)
 	if err != nil {
 		log.Fatalf("could not write output to S3: %v", err)
@@ -68,8 +69,8 @@ func writeFindingsToS3(s3uploader *s3manager.Uploader) (err error) {
 		// This will automatically close the file when the function completes.
 		defer func() {
 			cerr := f.Close()
-			if err == nil {
-				err = cerr
+			if cerr != nil {
+				err = helpers.CombineErrors([]error{err, cerr})
 			}
 		}()
 
@@ -79,7 +80,6 @@ func writeFindingsToS3(s3uploader *s3manager.Uploader) (err error) {
 			Body:   f,
 		}
 		_, err = s3uploader.Upload(upParams)
-		return err
 	}
 
 	return
@@ -103,11 +103,10 @@ func collectFindings() {
 		}
 	}()
 
-	teams, err := teams.ReadTeamMap(options.TeamMapFile)
+	profilesToTeams, accountsToTeams, err := teams.ParseTeamMap(options.TeamMapFile)
 	if err != nil {
-		log.Fatalf("could not parse team map: %v", err)
+		log.Fatalf("could not parse team map file: %v", err)
 	}
-	profilesToTeams := teams.ProfilesToTeamNames()
 
 	if len(profilesToTeams) > 0 {
 		// If we have defined profiles, get findings for each profile
@@ -120,7 +119,7 @@ func collectFindings() {
 		}
 	} else if options.AssumedRole != "" {
 		// If we have a defined assumed role, get findings for each account in the team map
-		for account, teamName := range teams.AccountsToTeamNames() {
+		for account, teamName := range accountsToTeams {
 			log.Printf("getting findings for account %v", account)
 			roleArn := fmt.Sprintf("arn:aws:iam::%v:role/%v", account, options.AssumedRole)
 			err = h.GetFindingsAndWriteToOutput(options.Region, options.DefaultProfile, roleArn, teamName)

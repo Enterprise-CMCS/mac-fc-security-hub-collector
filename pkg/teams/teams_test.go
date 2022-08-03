@@ -1,45 +1,35 @@
 package teams
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
-// This is an example of map that we create from the JSON team map.
-var exampleTeamMap = Teams{
-	Teams: []Team{
-		{
-			Name:     "Test Team 1",
-			Accounts: []string{"000000000001", "000000000011"},
-		},
-		{
-			Name:     "Test Team 2",
-			Accounts: []string{"000000000002", "000000000022"},
-		},
-	},
+var expectedProfilesToTeams = map[string]string{
+	"profile 1":  "Test Team 1",
+	"profile 11": "Test Team 1",
+	"profile 2":  "Test Team 2",
+	"profile 22": "Test Team 2",
 }
 
-// This is a helper function to compare two Teams structs and
-// make sure they are identical.
-func compareTeamMaps(a, b Teams) bool {
-	for teamIndex, team := range a.Teams {
-		if team.Name != b.Teams[teamIndex].Name {
-			return false
-		}
-		for acctIndex, acct := range team.Accounts {
-			if acct != b.Teams[teamIndex].Accounts[acctIndex] {
-				return false
-			}
-		}
-	}
-
-	return true
+var expectedAccountsToTeams = map[string]string{
+	"account 1":  "Test Team 1",
+	"account 11": "Test Team 1",
+	"account 2":  "Test Team 2",
+	"account 22": "Test Team 2",
 }
 
-func TestReadTeamMap(t *testing.T) {
-	extractedTeamMap, err := ReadTeamMap("team_map_test.json")
+func TestParseTeamMap(t *testing.T) {
+	actualProfilesToTeams, actualAccountsToTeams, err := ParseTeamMap("team_map_test.json")
 	if err != nil {
-		t.Errorf("ERROR: could not extract team map from test file")
+		t.Errorf("ERROR: could not extract team map from test file: %s", err)
 	}
 
-	if !compareTeamMaps(exampleTeamMap, extractedTeamMap) {
-		t.Errorf("ERROR: extracted team map does not match expected output")
+	if !reflect.DeepEqual(expectedProfilesToTeams, actualProfilesToTeams) {
+		t.Errorf("ERROR: expected profile to team map does not match actual. Expected: %#v, Actual: %#v", expectedProfilesToTeams, actualProfilesToTeams)
+	}
+
+	if !reflect.DeepEqual(expectedAccountsToTeams, actualAccountsToTeams) {
+		t.Errorf("ERROR: expected account to team map does not match actual. Expected: %#v, Actual: %#v", expectedAccountsToTeams, actualAccountsToTeams)
 	}
 }

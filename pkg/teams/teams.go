@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+
+	"github.com/CMSGov/security-hub-collector/pkg/helpers"
 )
 
 // Teams is a struct describing the format we expect in the JSON file
@@ -20,9 +22,19 @@ type Team struct {
 	Profiles []string `json:"profiles"`
 }
 
-// ReadTeamMap - takes the JSON encoded file that maps teams to accounts
+// ParseTeamMap takes a path to a team mapping JSON file, reads the file, and returns Go maps of profiles and accounts to team names
+func ParseTeamMap(path string) (profilesToTeams map[string]string, accountsToTeams map[string]string, err error) {
+	teams, err := readTeamMap(path)
+	if err != nil {
+		return
+	}
+
+	return teams.profilesToTeamNames(), teams.accountsToTeamNames(), err
+}
+
+// readTeamMap - takes the JSON encoded file that maps teams to accounts
 // and converts it into a Teams object that we can use later.
-func ReadTeamMap(filePath string) (teams Teams, err error) {
+func readTeamMap(filePath string) (teams Teams, err error) {
 	jsonFile := filepath.Clean(filePath)
 
 	// gosec complains here because we're essentially letting you open
@@ -32,11 +44,14 @@ func ReadTeamMap(filePath string) (teams Teams, err error) {
 	// safely ignore its complaints here.
 	// #nosec
 	f, err := os.Open(jsonFile)
+	if err != nil {
+		return
+	}
 
 	defer func() {
 		cerr := f.Close()
-		if err == nil {
-			err = cerr
+		if cerr != nil {
+			err = helpers.CombineErrors([]error{err, cerr})
 		}
 	}()
 
@@ -45,8 +60,8 @@ func ReadTeamMap(filePath string) (teams Teams, err error) {
 	return
 }
 
-// AccountsToTeamNames returns a map of accounts to team names
-func (t *Teams) AccountsToTeamNames() map[string]string {
+// accountsToTeamNames returns a map of accounts to team names
+func (t *Teams) accountsToTeamNames() map[string]string {
 	var a = make(map[string]string)
 	for _, team := range t.Teams {
 		for _, account := range team.Accounts {
@@ -56,8 +71,8 @@ func (t *Teams) AccountsToTeamNames() map[string]string {
 	return a
 }
 
-// ProfilesToTeamNames returns a map of profiles to team names
-func (t *Teams) ProfilesToTeamNames() map[string]string {
+// profilesToTeamNames returns a map of profiles to team names
+func (t *Teams) profilesToTeamNames() map[string]string {
 	var p = make(map[string]string)
 	for _, team := range t.Teams {
 		for _, profile := range team.Profiles {

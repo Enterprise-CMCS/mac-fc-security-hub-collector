@@ -5,7 +5,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/securityhub"
-	"github.com/aws/aws-sdk-go/service/securityhub/securityhubiface"
 
 	"github.com/CMSGov/security-hub-collector/internal/aws/client"
 
@@ -15,9 +14,8 @@ import (
 
 // HubCollector is a generic struct used to hold setting info
 type HubCollector struct {
-	HubClient  securityhubiface.SecurityHubAPI
-	OutputFile *os.File
-	CSVWriter  *csv.Writer
+	outputFile *os.File
+	csvWriter  *csv.Writer
 }
 
 // Initialize sets up the HubCollector object and writes the header row to the output file.
@@ -31,8 +29,8 @@ func (h *HubCollector) Initialize(outputFileName string) error {
 	if err != nil {
 		return fmt.Errorf("could not create output file: %v", err)
 	}
-	h.OutputFile = f
-	h.CSVWriter = csv.NewWriter(h.OutputFile)
+	h.outputFile = f
+	h.csvWriter = csv.NewWriter(h.outputFile)
 
 	err = h.writeHeadersToOutput()
 	if err != nil {
@@ -44,7 +42,7 @@ func (h *HubCollector) Initialize(outputFileName string) error {
 
 // isInitialized checks if the HubCollector has the required properties to perform file IO
 func (h *HubCollector) isInitialized() bool {
-	return h.OutputFile != nil && h.CSVWriter != nil
+	return h.outputFile != nil && h.csvWriter != nil
 }
 
 // FlushAndClose flushes the CSV writer and closes the output file
@@ -53,18 +51,18 @@ func (h *HubCollector) FlushAndClose() error {
 		return fmt.Errorf("HubCollector is not initialized")
 	}
 
-	h.CSVWriter.Flush()
-	err := h.CSVWriter.Error()
+	h.csvWriter.Flush()
+	err := h.csvWriter.Error()
 	if err != nil {
 		return fmt.Errorf("could not flush CSV writer: %v", err)
 	}
-	h.CSVWriter = nil
+	h.csvWriter = nil
 
-	err = h.OutputFile.Close()
+	err = h.outputFile.Close()
 	if err != nil {
 		return fmt.Errorf("could not close output file: %v", err)
 	}
-	h.OutputFile = nil
+	h.outputFile = nil
 
 	return nil
 }
@@ -181,7 +179,7 @@ func (h *HubCollector) writeHeadersToOutput() error {
 	// but for now this is good enough.
 	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State", "Workflow Status", "Created At", "Updated At"}
 
-	err := h.CSVWriter.Write(headers)
+	err := h.csvWriter.Write(headers)
 	if err != nil {
 		return err
 	}
@@ -198,7 +196,7 @@ func (h *HubCollector) writeFindingsToOutput(findings []*securityhub.AwsSecurity
 	for _, finding := range findings {
 		records := h.convertFindingToRows(finding, teamName)
 		for _, record := range records {
-			err := h.CSVWriter.Write(record)
+			err := h.csvWriter.Write(record)
 			if err != nil {
 				return err
 			}
