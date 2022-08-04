@@ -70,7 +70,7 @@ func writeFindingsToS3(s3uploader *s3manager.Uploader) (err error) {
 		defer func() {
 			cerr := f.Close()
 			if cerr != nil {
-				err = helpers.CombineErrors([]error{err, cerr})
+				err = helpers.CombineErrors(err, cerr)
 			}
 		}()
 

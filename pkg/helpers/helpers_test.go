@@ -60,7 +60,7 @@ func sameError(x, y error) bool {
 
 func TestCombineErrors(t *testing.T) {
 	for _, testCase := range HelpersTestCases {
-		actualError := CombineErrors(testCase.errors)
+		actualError := CombineErrors(testCase.errors...)
 		if !sameError(testCase.expectedError, actualError) {
 			t.Errorf("ERROR: expected error does not match actual error. Expected: %v, Actual: %v", testCase.expectedError, actualError)
 		}

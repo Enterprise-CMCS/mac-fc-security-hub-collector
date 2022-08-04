@@ -6,7 +6,7 @@ import (
 )
 
 // CombineErrors combines the messages from multiple errors into a single error. It returns nil if all errors are nil.
-func CombineErrors(errs []error) error {
+func CombineErrors(errs ...error) error {
 	var errStrs []string
 	var foundErr bool
 	for _, err := range errs {

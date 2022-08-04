@@ -51,7 +51,7 @@ func readTeamMap(filePath string) (teams Teams, err error) {
 	defer func() {
 		cerr := f.Close()
 		if cerr != nil {
-			err = helpers.CombineErrors([]error{err, cerr})
+			err = helpers.CombineErrors(err, cerr)
 		}
 	}()
 
