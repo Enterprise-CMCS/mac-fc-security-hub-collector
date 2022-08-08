@@ -1,8 +1,3 @@
-variable "container_name" {
-  type        = string
-  description = "Container name"
-}
-
 variable "lifecycle_policy" {
   type        = string
   description = "ECR repository lifecycle policy document. Used to override the default policy."
@@ -22,11 +17,6 @@ variable "scan_on_push" {
 }
 
 variable "allowed_read_principals" {
-  type        = list
+  type        = list(any)
   description = "External principals that are allowed to read from the ECR repository"
-}
-
-variable "ci_user_arn" {
-  type        = string
-  description = "ARN for CI user which has read/write permissions"
 }
