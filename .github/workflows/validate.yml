@@ -26,6 +26,6 @@ jobs:
       - name: run pre-commit
         uses: pre-commit/action@v2.0.3
       - name: run go tests
-        run: make test
+        run: go test -v ./pkg/...
       - name: build the Docker image
         run: docker build . --file Dockerfile
