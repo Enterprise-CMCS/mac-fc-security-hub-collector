@@ -2,30 +2,33 @@ name: validate
 on:
   pull_request:
 
+
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: setup go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.19
-      - name: setup python
-        uses: actions/setup-python@v2
-      - name: pre-commit-cache
-        uses: actions/cache@v2
-        env:
-          cache-name: pre-commit-dot-cache
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/.pre-commit-config.yaml') }}
-      - name: run pre-commit
-        uses: pre-commit/action@v2.0.3
-      - name: run go tests
-        run: go test -v ./pkg/...
-      - name: build the Docker image
-        run: docker build . --file Dockerfile
+    - name: checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: setup go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.19
+    - name: setup python
+      uses: actions/setup-python@v2
+    - name: pre-commit-cache
+      uses: actions/cache@v2
+      env:
+        cache-name: pre-commit-dot-cache
+      with:
+        path: ~/.cache/pre-commit
+        key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/.pre-commit-config.yaml') }}
+    - name: run pre-commit
+      uses: pre-commit/action@v2.0.3
+    - name: run go tests
+      run: make test
+    - name: goreleaser snapshot build
+      uses: goreleaser/goreleaser-action@v2
+      with:
+        args: build --rm-dist --snapshot
