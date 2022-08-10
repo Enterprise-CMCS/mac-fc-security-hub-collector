@@ -2,6 +2,7 @@ package securityhubcollector
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/securityhub"
@@ -25,7 +26,7 @@ func (h *HubCollector) Initialize(outputFileName string) error {
 	}
 
 	// create the output file and CSV writer
-	f, err := os.Create(outputFileName)
+	f, err := os.Create(filepath.Clean(outputFileName))
 	if err != nil {
 		return fmt.Errorf("could not create output file: %v", err)
 	}
