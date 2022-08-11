@@ -14,7 +14,7 @@ jobs:
     - name: setup go
       uses: actions/setup-go@v2
       with:
-        go-version: 1.16
+        go-version: 1.19
     - name: setup python
       uses: actions/setup-python@v2
     - name: pre-commit-cache
@@ -27,8 +27,6 @@ jobs:
     - name: run pre-commit
       uses: pre-commit/action@v2.0.3
     - name: run go tests
-      run: make test
-    - name: goreleaser snapshot build
-      uses: goreleaser/goreleaser-action@v2
-      with:
-        args: build --rm-dist --snapshot
+      run: go test -v ./pkg/...
+    - name: build the Docker image
+      run: docker build . --file Dockerfile

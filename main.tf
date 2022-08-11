@@ -6,8 +6,10 @@ locals {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_ecr_repository" "main" {
-  name = var.container_name
+  name = "security-hub-collector"
   tags = merge(local.tags, var.tags)
   image_scanning_configuration {
     scan_on_push = var.scan_on_push
@@ -54,13 +56,35 @@ data "aws_iam_policy_document" "ecr_perms_ro_cross_account" {
     actions = ["ecr:GetAuthorizationToken"]
 
     principals {
-      identifiers = concat([var.ci_user_arn], var.allowed_read_principals)
+      identifiers = var.allowed_read_principals
       type        = "AWS"
     }
   }
+}
 
+resource "aws_iam_user" "security_hub_collector_service_user" {
+  name          = "security-hub-collector-service-user"
+  force_destroy = true
+}
+
+resource "aws_iam_user_policy" "security_hub_collector_ecr_access" {
+  name   = "security-hub-collector-ecr-access"
+  user   = aws_iam_user.security_hub_collector_service_user.name
+  policy = data.aws_iam_policy_document.security_hub_collector_ecr_access.json
+}
+
+data "aws_iam_policy_document" "security_hub_collector_ecr_access" {
   statement {
-    sid = "githubCIPermissions"
+    sid = ""
+
+    effect = "Allow"
+
+    actions = ["ecr:GetAuthorizationToken"]
+
+    resources = ["*"]
+  }
+  statement {
+    sid = "ECRAccess"
 
     effect = "Allow"
 
@@ -75,12 +99,9 @@ data "aws_iam_policy_document" "ecr_perms_ro_cross_account" {
       "ecr:DescribeImages",
       "ecr:CompleteLayerUpload",
       "ecr:BatchGetImage",
-      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchCheckLayerAvailability"
     ]
 
-    principals {
-      identifiers = [var.ci_user_arn]
-      type        = "AWS"
-    }
+    resources = [aws_ecr_repository.main.arn]
   }
 }

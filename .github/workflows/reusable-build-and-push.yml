@@ -1,15 +1,23 @@
-name: docker-build
+name: reusable-build-and-push
 
 on:
-  push:
-    branches: [main]
-  # Also trigger on release created event
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        description: GitHub environment to use
+        required: true
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
 
 jobs:
   build:
+    name: Build and push to ${{ inputs.environment }}
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v2
       - name: Create env var for docker tag
@@ -17,7 +25,7 @@ jobs:
       - name: Create env var for git sha tag
         run: echo "HASH=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
       - name: Create env var for ECR repo
-        run:  echo "ECR_REPOSITORY=security-hub-collector" >> "$GITHUB_ENV"
+        run: echo "ECR_REPOSITORY=security-hub-collector" >> "$GITHUB_ENV"
       - name: Configure AWS Credentials
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -27,10 +35,6 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-      - name: goreleaser snapshot build
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          args: build --rm-dist --snapshot
       - name: Build the Docker image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
