@@ -1,11 +1,15 @@
 {
   "teams": [
     {
-      "accounts": ["156322662943"],
+      "accounts": [
+        "156322662943"
+      ],
       "name": "macbis-test"
     },
     {
-      "accounts": ["037370603820"],
+      "accounts": [
+        "037370603820"
+      ],
       "name": "macbis-dev"
     }
   ]

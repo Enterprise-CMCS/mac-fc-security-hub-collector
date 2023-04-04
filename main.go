@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+
 	"github.com/CMSGov/security-hub-collector/internal/aws/client"
 	"github.com/CMSGov/security-hub-collector/pkg/helpers"
 	"github.com/CMSGov/security-hub-collector/pkg/securityhubcollector"
 	"github.com/CMSGov/security-hub-collector/pkg/teams"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 
 	flag "github.com/jessevdk/go-flags"
 
