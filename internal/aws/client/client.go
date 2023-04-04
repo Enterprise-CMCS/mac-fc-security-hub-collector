@@ -1,52 +1,47 @@
 package client
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/aws/aws-sdk-go/service/securityhub"
+	"context"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/securityhub"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
-// MakeSession creates an AWS Session, with appropriate defaults,
-// using shared credentials, and with region and profile overrides.
-func makeSession(region, profile string) (*session.Session, error) {
-	sessOpts := session.Options{
-		SharedConfigState:       session.SharedConfigEnable,
-		AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
-	}
-	if profile != "" {
-		sessOpts.Profile = profile
-	}
-	if region != "" {
-		sessOpts.Config = aws.Config{
-			Region: aws.String(region),
-		}
-	}
-	return session.NewSessionWithOptions(sessOpts)
-}
+// functions in this library panic on error to simplify error handling
 
-// MustMakeSession creates an AWS Session using MakeSession and ensures
-// that it is valid.
-func mustMakeSession(region, profile string) *session.Session {
-	return session.Must(makeSession(region, profile))
-}
-
-// SecurityHub establishes our session with AWS and creates SecurityHub connection
-func SecurityHub(region, profile string, roleArn string) *securityhub.SecurityHub {
-	sess := mustMakeSession(region, profile)
+// SecurityHub creates a SecurityHub client using the credentials provider chain. Optionally configures cross-account credentials given a role to assume
+func SecurityHub(secHubRegion, roleArn string) *securityhub.Client {
+	// if roleArn is provided, this will contain the cross-account credentials provider
+	// if not, this will be nil and the default credentials provider chain will be used
+	var appCreds aws.CredentialsProvider
 	if roleArn != "" {
-		creds := stscreds.NewCredentials(sess, roleArn)
-		hubClient := securityhub.New(sess, aws.NewConfig().WithCredentials(creds).WithMaxRetries(10))
-		return hubClient
+		stsConfig, err := config.LoadDefaultConfig(context.TODO())
+		if err != nil {
+			panic("unable to load SDK config for STS, " + err.Error())
+		}
+		stsClient := sts.NewFromConfig(stsConfig)
+		appCreds = stscreds.NewAssumeRoleProvider(stsClient, roleArn)
 	}
-	hubClient := securityhub.New(sess)
-	return hubClient
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(secHubRegion), config.WithCredentialsProvider(appCreds))
+	if err != nil {
+		panic("unable to load SDK config for SecurityHub, " + err.Error())
+	}
+	client := securityhub.NewFromConfig(cfg)
+	return client
 }
 
-// MustMakeS3Uploader establishes our session with AWS and creates S3 connection
-func MustMakeS3Uploader(region, profile string) *s3manager.Uploader {
-	sess := mustMakeSession(region, profile)
-	s3Uploader := s3manager.NewUploader(sess)
-	return s3Uploader
+// S3Uploader creates an S3 upload manager
+func S3Uploader(region string) *manager.Uploader {
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
+	if err != nil {
+		panic("unable to load SDK config, " + err.Error())
+	}
+	uploader := manager.NewUploader(s3.NewFromConfig(cfg))
+	return uploader
 }

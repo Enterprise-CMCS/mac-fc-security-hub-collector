@@ -19,17 +19,16 @@ type Teams struct {
 type Team struct {
 	Name     string   `json:"name"`
 	Accounts []string `json:"accounts"`
-	Profiles []string `json:"profiles"`
 }
 
-// ParseTeamMap takes a path to a team mapping JSON file, reads the file, and returns Go maps of profiles and accounts to team names
-func ParseTeamMap(path string) (profilesToTeams map[string]string, accountsToTeams map[string]string, err error) {
+// ParseTeamMap takes a path to a team mapping JSON file, reads the file, and returns a Go map of accounts to team names
+func ParseTeamMap(path string) (accountsToTeams map[string]string, err error) {
 	teams, err := readTeamMap(path)
 	if err != nil {
 		return
 	}
 
-	return teams.profilesToTeamNames(), teams.accountsToTeamNames(), err
+	return teams.accountsToTeamNames(), err
 }
 
 // readTeamMap - takes the JSON encoded file that maps teams to accounts
@@ -69,15 +68,4 @@ func (t *Teams) accountsToTeamNames() map[string]string {
 		}
 	}
 	return a
-}
-
-// profilesToTeamNames returns a map of profiles to team names
-func (t *Teams) profilesToTeamNames() map[string]string {
-	var p = make(map[string]string)
-	for _, team := range t.Teams {
-		for _, profile := range team.Profiles {
-			p[profile] = team.Name
-		}
-	}
-	return p
 }

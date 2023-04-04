@@ -1,26 +1,12 @@
 {
   "teams": [
     {
-      "accounts": [
-        "account 1",
-        "account 11"
-      ],
-      "name": "Test Team 1",
-      "profiles": [
-        "profile 1",
-        "profile 11"
-      ]
+      "accounts": ["account 1", "account 11"],
+      "name": "Test Team 1"
     },
     {
-      "accounts": [
-        "account 2",
-        "account 22"
-      ],
-      "name": "Test Team 2",
-      "profiles": [
-        "profile 2",
-        "profile 22"
-      ]
+      "accounts": ["account 2", "account 22"],
+      "name": "Test Team 2"
     }
   ]
 }
