@@ -73,6 +73,7 @@ func TestConvertFindingToRows(t *testing.T) {
 					"arn:aws:ec2:us-test-1:000000000001:vpc/vpc-00000000000000001",
 					"000000000001",
 					"us-east-1",
+					"dev",
 					"FAILED",
 					"ACTIVE",
 					"NEW",
@@ -127,6 +128,7 @@ func TestConvertFindingToRows(t *testing.T) {
 					"arn:aws:ec2:us-test-1:000000000001:vpc/vpc-00000000000000002",
 					"000000000001",
 					"us-east-1",
+					"dev",
 					"FAILED",
 					"ACTIVE",
 					"NEW",
@@ -144,6 +146,7 @@ func TestConvertFindingToRows(t *testing.T) {
 					"arn:aws:ec2:us-test-1:000000000001:vpc/vpc-00000000000000003",
 					"000000000001",
 					"us-east-1",
+					"dev",
 					"FAILED",
 					"ACTIVE",
 					"NEW",
@@ -193,6 +196,7 @@ func TestConvertFindingToRows(t *testing.T) {
 					"arn:aws:ec2:us-test-1:000000000001:vpc/vpc-00000000000000001",
 					"000000000001",
 					"us-east-1",
+					"dev",
 					"",
 					"ACTIVE",
 					"NEW",
@@ -242,6 +246,7 @@ func TestConvertFindingToRows(t *testing.T) {
 					"arn:aws:ec2:us-test-1:000000000001:vpc/vpc-00000000000000001",
 					"000000000001",
 					"us-east-1",
+					"dev",
 					"FAILED",
 					"ACTIVE",
 					"SUPPRESSED",
@@ -254,10 +259,11 @@ func TestConvertFindingToRows(t *testing.T) {
 
 	h := HubCollector{}
 	teamName := "Test Team 1"
+	environment := "dev"
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := h.convertFindingToRows(tc.finding, teamName)
+			actual := h.convertFindingToRows(tc.finding, teamName, environment)
 			if !outputEqual(actual, tc.expected) {
 				t.Errorf("ERROR: Finding conversion does not match expectations. \nExpected: %v\n Actual: %v", tc.expected, actual)
 			}

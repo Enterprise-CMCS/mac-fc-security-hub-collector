@@ -35,7 +35,7 @@ var options Options
 
 // WriteFindingsToS3 - Writes the finding results file to an S3 bucket
 func writeFindingsToS3() error {
-	s3uploader := client.S3Uploader(options.S3Region)
+	s3uploader := client.MustMakeS3Uploader(options.S3Region)
 	// use Outfile name as the key by default
 	key := options.OutputFileName
 	// if the passed in key exists, use that
@@ -102,13 +102,13 @@ func collectFindings(secHubRegions []string) {
 	}
 
 	for account, teamName := range accountsToTeams {
-		roleArn := fmt.Sprintf("arn:aws:iam::%v:role/%v", account, options.AssumeRole)
+		roleArn := fmt.Sprintf("arn:aws:iam::%v:role/%v", account.ID, options.AssumeRole)
 
 		for _, secHubRegion := range secHubRegions {
-			log.Printf("getting findings for account %v in %v", account, secHubRegion)
-			err = h.GetFindingsAndWriteToOutput(secHubRegion, teamName, roleArn)
+			log.Printf("getting findings for account %v in %v", account.ID, secHubRegion)
+			err = h.GetFindingsAndWriteToOutput(secHubRegion, teamName, account.Environment, roleArn)
 			if err != nil {
-				log.Fatalf("could not get findings for account %v in %v: %v", account, secHubRegion, err)
+				log.Fatalf("could not get findings for account %v in %v: %v", account.ID, secHubRegion, err)
 			}
 		}
 	}

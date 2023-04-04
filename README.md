@@ -2,7 +2,7 @@
 
 ## Description
 
-This tool pulls findings from AWS Security Hub and outputs them for consumption by visualization tools. To use this tool, you need a cross-account role that is valid for all accounts listed in the team map used by the tool.
+This tool pulls findings from AWS Security Hub and outputs them for consumption by visualization tools. To use this tool, you need a cross-account role that is valid for all accounts listed in the team map provided to the tool.
 
 ## Installation
 
@@ -18,14 +18,17 @@ To display a full list of CLI options, build the application and run `security-h
 
 
 You will need to create a team map file with a JSON object that describes
-your teams based on account numbers. For example:
+your teams based on account numbers and environments. For example:
 
 ```json
 {
   "teams": [
     {
-      "accounts": ["000000000001", "000000000011"],
-      "name": "My Team"
+      "accounts": [
+        { "id": "000000000001", "environment": "dev" },
+        { "id": "000000000011", "environment": "test" }
+      ],
+      "name":"My Team"
     }
   ]
 }

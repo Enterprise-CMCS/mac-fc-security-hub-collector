@@ -17,7 +17,6 @@ import (
 
 // HubCollector is a generic struct used to hold setting info
 type HubCollector struct {
-	roleARN    string
 	outputFile *os.File
 	csvWriter  *csv.Writer
 }
@@ -72,7 +71,7 @@ func (h *HubCollector) FlushAndClose() error {
 }
 
 // GetFindingsAndWriteToOutput - gets all security hub findings from a single AWS account and writes them to the output file
-func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName, roleArn string) error {
+func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName, environment, roleArn string) error {
 	// We want all the security findings that are active and not resolved.
 	params := &securityhub.GetFindingsInput{
 		Filters: &types.AwsSecurityFindingFilters{
@@ -92,7 +91,7 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName, roleA
 		MaxResults: 100,
 	}
 
-	securityHubClient := client.SecurityHub(secHubRegion, roleArn)
+	securityHubClient := client.MustMakeSecurityHubClient(secHubRegion, roleArn)
 	paginator := securityhub.NewGetFindingsPaginator(securityHubClient, params)
 
 	for paginator.HasMorePages() {
@@ -100,7 +99,7 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName, roleA
 		if err != nil {
 			return fmt.Errorf("could not get next page of findings: %s", err)
 		}
-		err = h.writeFindingsToOutput(page.Findings, teamName)
+		err = h.writeFindingsToOutput(page.Findings, teamName, environment)
 		if err != nil {
 			return fmt.Errorf("could not write findings to output: %s", err)
 		}
@@ -110,7 +109,8 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName, roleA
 }
 
 // convertFindingToRows - converts a single finding to the record format we're using
-func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, teamName string) [][]string {
+// the order of the records must match with the order of the headers in writeHeadersToOutput
+func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, teamName, environment string) [][]string {
 	var output [][]string
 
 	// Each finding may have multiple resources, so we need to iterate through
@@ -160,6 +160,7 @@ func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, te
 		record = append(record, *r.Id)
 		record = append(record, *finding.AwsAccountId)
 		record = append(record, region)
+		record = append(record, environment)
 		if finding.Compliance == nil {
 			record = append(record, "")
 		} else {
@@ -192,7 +193,7 @@ func (h *HubCollector) writeHeadersToOutput() error {
 	// out the data we wanted from these findings changed regularly, we
 	// could make the headers/fields come from some sort of schema or struct,
 	// but for now this is good enough.
-	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Region", "Compliance Status", "Record State", "Workflow Status", "Created At", "Updated At"}
+	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Region", "Environment", "Compliance Status", "Record State", "Workflow Status", "Created At", "Updated At"}
 
 	err := h.csvWriter.Write(headers)
 	if err != nil {
@@ -203,13 +204,13 @@ func (h *HubCollector) writeHeadersToOutput() error {
 }
 
 // writeFindingsToOutput - takes a list of security findings and writes them to the output file.
-func (h *HubCollector) writeFindingsToOutput(findings []types.AwsSecurityFinding, teamName string) error {
+func (h *HubCollector) writeFindingsToOutput(findings []types.AwsSecurityFinding, teamName, environment string) error {
 	if !h.isInitialized() {
 		return fmt.Errorf("HubCollector is not initialized")
 	}
 
 	for _, finding := range findings {
-		records := h.convertFindingToRows(finding, teamName)
+		records := h.convertFindingToRows(finding, teamName, environment)
 		for _, record := range records {
 			err := h.csvWriter.Write(record)
 			if err != nil {

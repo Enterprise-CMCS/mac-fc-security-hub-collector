@@ -5,11 +5,11 @@ import (
 	"testing"
 )
 
-var expectedAccountsToTeams = map[string]string{
-	"account 1":  "Test Team 1",
-	"account 11": "Test Team 1",
-	"account 2":  "Test Team 2",
-	"account 22": "Test Team 2",
+var expectedAccountsToTeams = map[Account]string{
+	{ID: "account 1", Environment: "dev"}:   "Test Team 1",
+	{ID: "account 11", Environment: "test"}: "Test Team 1",
+	{ID: "account 2", Environment: "impl"}:  "Test Team 2",
+	{ID: "account 22", Environment: "prod"}: "Test Team 2",
 }
 
 func TestParseTeamMap(t *testing.T) {

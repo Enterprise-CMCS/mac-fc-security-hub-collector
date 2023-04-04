@@ -1,11 +1,17 @@
 {
   "teams": [
     {
-      "accounts": ["account 1", "account 11"],
+      "accounts": [
+        { "id": "account 1", "environment": "dev" },
+        { "id": "account 11", "environment": "test" }
+      ],
       "name": "Test Team 1"
     },
     {
-      "accounts": ["account 2", "account 22"],
+      "accounts": [
+        { "id": "account 2", "environment": "impl" },
+        { "id": "account 22", "environment": "prod" }
+      ],
       "name": "Test Team 2"
     }
   ]

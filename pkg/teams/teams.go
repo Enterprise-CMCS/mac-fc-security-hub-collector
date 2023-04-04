@@ -17,12 +17,18 @@ type Teams struct {
 // Team is a struct describing a single team and its accounts as we
 // expect in the JSON file describing team mappings
 type Team struct {
-	Name     string   `json:"name"`
-	Accounts []string `json:"accounts"`
+	Name     string    `json:"name"`
+	Accounts []Account `json:"accounts"`
 }
 
-// ParseTeamMap takes a path to a team mapping JSON file, reads the file, and returns a Go map of accounts to team names
-func ParseTeamMap(path string) (accountsToTeams map[string]string, err error) {
+// Account is a struct describing a single account for a team
+type Account struct {
+	ID          string `json:"id"`
+	Environment string `json:"environment"`
+}
+
+// ParseTeamMap takes a path to a team mapping JSON file, reads the file, and returns a Go map of Accounts to team names
+func ParseTeamMap(path string) (accountsToTeams map[Account]string, err error) {
 	teams, err := readTeamMap(path)
 	if err != nil {
 		return
@@ -54,14 +60,16 @@ func readTeamMap(filePath string) (teams Teams, err error) {
 		}
 	}()
 
-	err = json.NewDecoder(f).Decode(&teams)
+	decoder := json.NewDecoder(f)
+	decoder.DisallowUnknownFields()
+	err = decoder.Decode(&teams)
 
 	return
 }
 
-// accountsToTeamNames returns a map of accounts to team names
-func (t *Teams) accountsToTeamNames() map[string]string {
-	var a = make(map[string]string)
+// accountsToTeamNames returns a map of Accounts to team names
+func (t *Teams) accountsToTeamNames() map[Account]string {
+	var a = make(map[Account]string)
 	for _, team := range t.Teams {
 		for _, account := range team.Accounts {
 			a[account] = team.Name
