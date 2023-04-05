@@ -34,6 +34,25 @@ your teams based on account numbers and environments. For example:
 }
 ```
 
+## Run Docker Image Locally
+
+To run the Docker image locally for testing, do the following:
+
+1. create a local `team_map.json` file based on the example above
+2. `export TEAM_MAP=$(cat team_map.json | base64)`
+3. set AWS creds in the environment (`AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID, AWS_SESSION_TOKEN`)
+4. `docker build . -t local-collector-test`
+5. run the image:
+
+```bash
+docker run \
+-e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID -e TEAM_MAP \
+-e AWS_REGION={region}
+-e ASSUME_ROLE={role name} \
+-e S3_BUCKET_PATH={bucket name} \
+local-collector-test
+```
+
 ## Terraform
 
 The repo contains a Terraform module that deploys:
