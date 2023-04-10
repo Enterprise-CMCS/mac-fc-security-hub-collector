@@ -38,7 +38,8 @@ jobs:
       - name: Build the Docker image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: docker build . --file Dockerfile --tag $ECR_REGISTRY/$ECR_REPOSITORY:${TAG} --tag $ECR_REGISTRY/$ECR_REPOSITORY:latest --tag $ECR_REGISTRY/$ECR_REPOSITORY:${HASH}
+        # for now, we're not using the latest tag since other consumers of this image are not yet ready to use it yet. We'll use the v2 tag for now.
+        run: docker build . --file Dockerfile --tag $ECR_REGISTRY/$ECR_REPOSITORY:${TAG} --tag $ECR_REGISTRY/$ECR_REPOSITORY:v2 --tag $ECR_REGISTRY/$ECR_REPOSITORY:${HASH}
       - name: Push docker image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
