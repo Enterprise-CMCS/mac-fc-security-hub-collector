@@ -82,9 +82,9 @@ func readTeamMap(filePath string) (teams Teams, err error) {
 }
 
 // hasAccount checks if the given account ID is in the map of Accounts to team names
-func hasAccount(accountsToTeamNames map[Account]string, accountId string) bool {
+func hasAccount(accountsToTeamNames map[Account]string, accountID string) bool {
 	for account := range accountsToTeamNames {
-		if account.ID == accountId {
+		if account.ID == accountID {
 			return true
 		}
 	}
