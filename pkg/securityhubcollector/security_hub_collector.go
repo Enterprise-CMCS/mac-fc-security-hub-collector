@@ -78,20 +78,23 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName, envir
 			RecordState: []types.StringFilter{
 				{
 					Comparison: types.StringFilterComparisonEquals,
-					Value:      aws.String("ACTIVE"),
+					Value:      aws.String(string(types.RecordStateActive)),
 				},
 			},
 			WorkflowStatus: []types.StringFilter{
 				{
 					Comparison: types.StringFilterComparisonNotEquals,
-					Value:      aws.String("RESOLVED"),
+					Value:      aws.String(string(types.WorkflowStatusResolved)),
 				},
 			},
 		},
 		MaxResults: 100,
 	}
 
-	securityHubClient := client.MustMakeSecurityHubClient(secHubRegion, roleArn)
+	securityHubClient, err := client.MakeSecurityHubClient(secHubRegion, roleArn)
+	if err != nil {
+		return fmt.Errorf("could not make security hub client: %s", err)
+	}
 	paginator := securityhub.NewGetFindingsPaginator(securityHubClient, params)
 
 	for paginator.HasMorePages() {
@@ -159,8 +162,6 @@ func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, te
 		}
 		record = append(record, *r.Id)
 		record = append(record, *finding.AwsAccountId)
-		record = append(record, region)
-		record = append(record, environment)
 		if finding.Compliance == nil {
 			record = append(record, "")
 		} else {
@@ -174,6 +175,8 @@ func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, te
 		}
 		record = append(record, *finding.CreatedAt)
 		record = append(record, *finding.UpdatedAt)
+		record = append(record, region)
+		record = append(record, environment)
 
 		// Each record *may* have multiple findings, so we make a list of
 		// records and that's what we'll output.
@@ -193,7 +196,7 @@ func (h *HubCollector) writeHeadersToOutput() error {
 	// out the data we wanted from these findings changed regularly, we
 	// could make the headers/fields come from some sort of schema or struct,
 	// but for now this is good enough.
-	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Region", "Environment", "Compliance Status", "Record State", "Workflow Status", "Created At", "Updated At"}
+	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State", "Workflow Status", "Created At", "Updated At", "Region", "Environment"}
 
 	err := h.csvWriter.Write(headers)
 	if err != nil {

@@ -36,7 +36,10 @@ var options Options
 
 // WriteFindingsToS3 - Writes the finding results file to an S3 bucket
 func writeFindingsToS3() error {
-	s3uploader := client.MustMakeS3Uploader(options.S3Region)
+	s3uploader, err := client.MakeS3Uploader(options.S3Region)
+	if err != nil {
+		return err
+	}
 	// use Outfile name as the key by default
 	key := options.OutputFileName
 	// if the passed in key exists, use that

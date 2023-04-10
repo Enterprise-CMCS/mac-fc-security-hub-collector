@@ -24,9 +24,11 @@ func outputEqual(a, b [][]string) bool {
 }
 
 type testCase struct {
-	name     string
-	finding  types.AwsSecurityFinding
-	expected [][]string
+	name        string
+	teamName    string
+	environment string
+	finding     types.AwsSecurityFinding
+	expected    [][]string
 }
 
 // This function tests the conversion of a security finding into the
@@ -34,7 +36,9 @@ type testCase struct {
 func TestConvertFindingToRows(t *testing.T) {
 	testCases := []testCase{
 		{
-			name: "Active finding, single resource",
+			name:        "Active finding, single resource",
+			teamName:    "Test Team 1",
+			environment: "dev",
 			finding: types.AwsSecurityFinding{
 				AwsAccountId: aws.String("000000000001"),
 				CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
@@ -72,19 +76,21 @@ func TestConvertFindingToRows(t *testing.T) {
 					"https://example.com/dothething",
 					"arn:aws:ec2:us-test-1:000000000001:vpc/vpc-00000000000000001",
 					"000000000001",
-					"us-east-1",
-					"dev",
 					"FAILED",
 					"ACTIVE",
 					"NEW",
 					"2020-03-22T13:22:13.933Z",
 					"2020-03-22T13:22:13.933Z",
+					"us-east-1",
+					"dev",
 				},
 			},
 		},
 
 		{
-			name: "Active finding, multiple resources",
+			name:        "Active finding, multiple resources",
+			teamName:    "Test Team 1",
+			environment: "dev",
 			finding: types.AwsSecurityFinding{
 				AwsAccountId: aws.String("000000000001"),
 				CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
@@ -127,13 +133,13 @@ func TestConvertFindingToRows(t *testing.T) {
 					"https://example.com/dothething",
 					"arn:aws:ec2:us-test-1:000000000001:vpc/vpc-00000000000000002",
 					"000000000001",
-					"us-east-1",
-					"dev",
 					"FAILED",
 					"ACTIVE",
 					"NEW",
 					"2020-03-22T13:22:13.933Z",
 					"2020-03-22T13:22:13.933Z",
+					"us-east-1",
+					"dev",
 				},
 				{
 					"Test Team 1",
@@ -145,19 +151,21 @@ func TestConvertFindingToRows(t *testing.T) {
 					"https://example.com/dothething",
 					"arn:aws:ec2:us-test-1:000000000001:vpc/vpc-00000000000000003",
 					"000000000001",
-					"us-east-1",
-					"dev",
 					"FAILED",
 					"ACTIVE",
 					"NEW",
 					"2020-03-22T13:22:13.933Z",
 					"2020-03-22T13:22:13.933Z",
+					"us-east-1",
+					"dev",
 				},
 			},
 		},
 
 		{
-			name: "Active finding, no compliance information",
+			name:        "Active finding, no compliance information",
+			teamName:    "Test Team 1",
+			environment: "dev",
 			finding: types.AwsSecurityFinding{
 				AwsAccountId: aws.String("000000000001"),
 				CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
@@ -195,19 +203,21 @@ func TestConvertFindingToRows(t *testing.T) {
 					"https://example.com/dothething",
 					"arn:aws:ec2:us-test-1:000000000001:vpc/vpc-00000000000000001",
 					"000000000001",
-					"us-east-1",
-					"dev",
 					"",
 					"ACTIVE",
 					"NEW",
 					"2020-03-22T13:22:13.933Z",
 					"2020-03-22T13:22:13.933Z",
+					"us-east-1",
+					"dev",
 				},
 			},
 		},
 
 		{
-			name: "Suppressed finding",
+			name:        "Suppressed finding",
+			teamName:    "Test Team 1",
+			environment: "dev",
 			finding: types.AwsSecurityFinding{
 				AwsAccountId: aws.String("000000000001"),
 				CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
@@ -245,25 +255,23 @@ func TestConvertFindingToRows(t *testing.T) {
 					"https://example.com/dothething",
 					"arn:aws:ec2:us-test-1:000000000001:vpc/vpc-00000000000000001",
 					"000000000001",
-					"us-east-1",
-					"dev",
 					"FAILED",
 					"ACTIVE",
 					"SUPPRESSED",
 					"2020-03-22T13:22:13.933Z",
 					"2020-03-22T13:22:13.933Z",
+					"us-east-1",
+					"dev",
 				},
 			},
 		},
 	}
 
 	h := HubCollector{}
-	teamName := "Test Team 1"
-	environment := "dev"
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := h.convertFindingToRows(tc.finding, teamName, environment)
+			actual := h.convertFindingToRows(tc.finding, tc.teamName, tc.environment)
 			if !outputEqual(actual, tc.expected) {
 				t.Errorf("ERROR: Finding conversion does not match expectations. \nExpected: %v\n Actual: %v", tc.expected, actual)
 			}
