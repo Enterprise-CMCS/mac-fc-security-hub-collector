@@ -90,23 +90,23 @@ func TestConvertFindingToRows(t *testing.T) {
 		{
 			name:        "Active finding, multiple resources",
 			teamName:    "Test Team 1",
-			environment: "dev",
+			environment: "impl",
 			finding: types.AwsSecurityFinding{
 				AwsAccountId: aws.String("000000000001"),
 				CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
 				Description:  aws.String("MultiResource Test Finding"),
-				ProductArn:   aws.String("arn:aws:securityhub:us-east-1::product/aws/securityhub"),
+				ProductArn:   aws.String("arn:aws:securityhub:us-west-2::product/aws/securityhub"),
 				RecordState:  types.RecordStateActive,
 				Resources: []types.Resource{
 					{
 						Id:     aws.String("arn:aws:ec2:us-test-1:000000000001:vpc/vpc-00000000000000002"),
 						Type:   aws.String("AwsEc2Vpc"),
-						Region: aws.String("us-east-1"),
+						Region: aws.String("us-west-2"),
 					},
 					{
 						Id:     aws.String("arn:aws:ec2:us-test-1:000000000001:vpc/vpc-00000000000000003"),
 						Type:   aws.String("AwsEc2Vpc"),
-						Region: aws.String("us-east-1"),
+						Region: aws.String("us-west-2"),
 					},
 				},
 				SchemaVersion: aws.String("2018-10-08"),
@@ -138,8 +138,8 @@ func TestConvertFindingToRows(t *testing.T) {
 					"NEW",
 					"2020-03-22T13:22:13.933Z",
 					"2020-03-22T13:22:13.933Z",
-					"us-east-1",
-					"dev",
+					"us-west-2",
+					"impl",
 				},
 				{
 					"Test Team 1",
@@ -156,8 +156,8 @@ func TestConvertFindingToRows(t *testing.T) {
 					"NEW",
 					"2020-03-22T13:22:13.933Z",
 					"2020-03-22T13:22:13.933Z",
-					"us-east-1",
-					"dev",
+					"us-west-2",
+					"impl",
 				},
 			},
 		},
@@ -165,7 +165,7 @@ func TestConvertFindingToRows(t *testing.T) {
 		{
 			name:        "Active finding, no compliance information",
 			teamName:    "Test Team 1",
-			environment: "dev",
+			environment: "prod",
 			finding: types.AwsSecurityFinding{
 				AwsAccountId: aws.String("000000000001"),
 				CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
@@ -209,7 +209,7 @@ func TestConvertFindingToRows(t *testing.T) {
 					"2020-03-22T13:22:13.933Z",
 					"2020-03-22T13:22:13.933Z",
 					"us-east-1",
-					"dev",
+					"prod",
 				},
 			},
 		},
