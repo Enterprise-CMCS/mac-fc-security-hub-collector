@@ -2,11 +2,20 @@ package teams
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/CMSGov/security-hub-collector/pkg/helpers"
 )
+
+type duplicateAccountIDError struct {
+	message string
+}
+
+func (e *duplicateAccountIDError) Error() string {
+	return e.message
+}
 
 // Teams is a struct describing the format we expect in the JSON file
 // describing the team mappings
@@ -17,19 +26,29 @@ type Teams struct {
 // Team is a struct describing a single team and its accounts as we
 // expect in the JSON file describing team mappings
 type Team struct {
-	Name     string   `json:"name"`
-	Accounts []string `json:"accounts"`
-	Profiles []string `json:"profiles"`
+	Name     string    `json:"name"`
+	Accounts []Account `json:"accounts"`
 }
 
-// ParseTeamMap takes a path to a team mapping JSON file, reads the file, and returns Go maps of profiles and accounts to team names
-func ParseTeamMap(path string) (profilesToTeams map[string]string, accountsToTeams map[string]string, err error) {
+// Account is a struct describing a single account for a team
+type Account struct {
+	ID          string `json:"id"`
+	Environment string `json:"environment"`
+}
+
+// ParseTeamMap takes a path to a team mapping JSON file, reads the file, and returns a Go map of Accounts to team names
+func ParseTeamMap(path string) (accountsToTeams map[Account]string, err error) {
 	teams, err := readTeamMap(path)
 	if err != nil {
-		return
+		return nil, fmt.Errorf("error parsing team map: %s", err)
 	}
 
-	return teams.profilesToTeamNames(), teams.accountsToTeamNames(), err
+	accountsToTeams, err = teams.accountsToTeamNames()
+	if err != nil {
+		return nil, fmt.Errorf("error parsing team map: %w", err)
+	}
+
+	return accountsToTeams, nil
 }
 
 // readTeamMap - takes the JSON encoded file that maps teams to accounts
@@ -55,29 +74,35 @@ func readTeamMap(filePath string) (teams Teams, err error) {
 		}
 	}()
 
-	err = json.NewDecoder(f).Decode(&teams)
+	decoder := json.NewDecoder(f)
+	decoder.DisallowUnknownFields()
+	err = decoder.Decode(&teams)
 
 	return
 }
 
-// accountsToTeamNames returns a map of accounts to team names
-func (t *Teams) accountsToTeamNames() map[string]string {
-	var a = make(map[string]string)
+// hasAccount checks if the given account ID is in the map of Accounts to team names
+func hasAccount(accountsToTeamNames map[Account]string, accountID string) bool {
+	for account := range accountsToTeamNames {
+		if account.ID == accountID {
+			return true
+		}
+	}
+	return false
+}
+
+// accountsToTeamNames returns a map of Accounts to team names
+func (t *Teams) accountsToTeamNames() (map[Account]string, error) {
+	var a = make(map[Account]string)
 	for _, team := range t.Teams {
 		for _, account := range team.Accounts {
+			if hasAccount(a, account.ID) {
+				return nil, &duplicateAccountIDError{
+					message: fmt.Sprintf("duplicate account ID: %s", account.ID),
+				}
+			}
 			a[account] = team.Name
 		}
 	}
-	return a
-}
-
-// profilesToTeamNames returns a map of profiles to team names
-func (t *Teams) profilesToTeamNames() map[string]string {
-	var p = make(map[string]string)
-	for _, team := range t.Teams {
-		for _, profile := range team.Profiles {
-			p[profile] = team.Name
-		}
-	}
-	return p
+	return a, nil
 }

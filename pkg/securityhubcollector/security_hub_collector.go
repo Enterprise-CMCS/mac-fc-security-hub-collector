@@ -1,11 +1,13 @@
 package securityhubcollector
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/securityhub"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/securityhub"
+	"github.com/aws/aws-sdk-go-v2/service/securityhub/types"
 
 	"github.com/CMSGov/security-hub-collector/internal/aws/client"
 
@@ -69,44 +71,49 @@ func (h *HubCollector) FlushAndClose() error {
 }
 
 // GetFindingsAndWriteToOutput - gets all security hub findings from a single AWS account and writes them to the output file
-func (h *HubCollector) GetFindingsAndWriteToOutput(region string, profile string, roleArn string, teamName string) error {
+func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName, environment, roleArn string) error {
 	// We want all the security findings that are active and not resolved.
 	params := &securityhub.GetFindingsInput{
-		Filters: &securityhub.AwsSecurityFindingFilters{
-			RecordState: []*securityhub.StringFilter{
+		Filters: &types.AwsSecurityFindingFilters{
+			RecordState: []types.StringFilter{
 				{
-					Comparison: aws.String("EQUALS"),
-					Value:      aws.String("ACTIVE"),
+					Comparison: types.StringFilterComparisonEquals,
+					Value:      aws.String(string(types.RecordStateActive)),
 				},
 			},
-			WorkflowStatus: []*securityhub.StringFilter{
+			WorkflowStatus: []types.StringFilter{
 				{
-					Comparison: aws.String("NOT_EQUALS"),
-					Value:      aws.String("RESOLVED"),
+					Comparison: types.StringFilterComparisonNotEquals,
+					Value:      aws.String(string(types.WorkflowStatusResolved)),
 				},
 			},
 		},
-		MaxResults: aws.Int64(100),
+		MaxResults: 100,
 	}
 
-	var err error
-	securityHubClient := client.SecurityHub(region, profile, roleArn)
+	securityHubClient, err := client.MakeSecurityHubClient(secHubRegion, roleArn)
+	if err != nil {
+		return fmt.Errorf("could not make security hub client: %s", err)
+	}
+	paginator := securityhub.NewGetFindingsPaginator(securityHubClient, params)
 
-	err = securityHubClient.GetFindingsPages(params,
-		func(page *securityhub.GetFindingsOutput, lastPage bool) bool {
-			writeErr := h.writeFindingsToOutput(page.Findings, teamName)
-			if writeErr != nil {
-				err = fmt.Errorf("could not write findings to output: %s", writeErr)
-				return false
-			}
-			return true
-		})
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.TODO())
+		if err != nil {
+			return fmt.Errorf("could not get next page of findings: %s", err)
+		}
+		err = h.writeFindingsToOutput(page.Findings, teamName, environment)
+		if err != nil {
+			return fmt.Errorf("could not write findings to output: %s", err)
+		}
+	}
 
-	return err
+	return nil
 }
 
 // convertFindingToRows - converts a single finding to the record format we're using
-func (h *HubCollector) convertFindingToRows(finding *securityhub.AwsSecurityFinding, teamName string) [][]string {
+// the order of the records must match with the order of the headers in writeHeadersToOutput
+func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, teamName, environment string) [][]string {
 	var output [][]string
 
 	// Each finding may have multiple resources, so we need to iterate through
@@ -116,6 +123,15 @@ func (h *HubCollector) convertFindingToRows(finding *securityhub.AwsSecurityFind
 		// Here we compile a single record, which is a representation of
 		// the row we want to output into the CSV for this resource in
 		// the finding.
+
+		// If the resource for a finding has a non-nil region, prefer that. Otherwise use the finding region.  If both are nil, use an empty string.
+		var region string
+		if r.Region != nil {
+			region = *r.Region
+		} else if finding.Region != nil {
+			region = *finding.Region
+		}
+
 		var record []string
 		record = append(record, teamName)
 		record = append(record, *r.Type)
@@ -124,7 +140,7 @@ func (h *HubCollector) convertFindingToRows(finding *securityhub.AwsSecurityFind
 		if finding.Severity == nil {
 			record = append(record, "")
 		} else {
-			record = append(record, *finding.Severity.Label)
+			record = append(record, string(finding.Severity.Label))
 		}
 		if finding.Remediation == nil {
 			record = append(record, "", "")
@@ -149,16 +165,18 @@ func (h *HubCollector) convertFindingToRows(finding *securityhub.AwsSecurityFind
 		if finding.Compliance == nil {
 			record = append(record, "")
 		} else {
-			record = append(record, *finding.Compliance.Status)
+			record = append(record, string(finding.Compliance.Status))
 		}
-		record = append(record, *finding.RecordState)
+		record = append(record, string(finding.RecordState))
 		if finding.Workflow == nil {
 			record = append(record, "")
 		} else {
-			record = append(record, *finding.Workflow.Status)
+			record = append(record, string(finding.Workflow.Status))
 		}
 		record = append(record, *finding.CreatedAt)
 		record = append(record, *finding.UpdatedAt)
+		record = append(record, region)
+		record = append(record, environment)
 
 		// Each record *may* have multiple findings, so we make a list of
 		// records and that's what we'll output.
@@ -178,7 +196,7 @@ func (h *HubCollector) writeHeadersToOutput() error {
 	// out the data we wanted from these findings changed regularly, we
 	// could make the headers/fields come from some sort of schema or struct,
 	// but for now this is good enough.
-	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State", "Workflow Status", "Created At", "Updated At"}
+	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State", "Workflow Status", "Created At", "Updated At", "Region", "Environment"}
 
 	err := h.csvWriter.Write(headers)
 	if err != nil {
@@ -189,13 +207,13 @@ func (h *HubCollector) writeHeadersToOutput() error {
 }
 
 // writeFindingsToOutput - takes a list of security findings and writes them to the output file.
-func (h *HubCollector) writeFindingsToOutput(findings []*securityhub.AwsSecurityFinding, teamName string) error {
+func (h *HubCollector) writeFindingsToOutput(findings []types.AwsSecurityFinding, teamName, environment string) error {
 	if !h.isInitialized() {
 		return fmt.Errorf("HubCollector is not initialized")
 	}
 
 	for _, finding := range findings {
-		records := h.convertFindingToRows(finding, teamName)
+		records := h.convertFindingToRows(finding, teamName, environment)
 		for _, record := range records {
 			err := h.csvWriter.Write(record)
 			if err != nil {
