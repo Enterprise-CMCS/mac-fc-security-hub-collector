@@ -105,8 +105,14 @@ func collectFindings(secHubRegions []string) {
 		log.Fatalf("could not parse team map file: %v", err)
 	}
 
+	// Add a leading slash to the provided role if it doesn't already have one
+	formattedRole := options.AssumeRole
+	if !strings.HasPrefix(formattedRole, "/") {
+		formattedRole = "/" + formattedRole
+	}
+
 	for account, teamName := range accountsToTeams {
-		roleArn := fmt.Sprintf("arn:aws:iam::%v:role/%v", account.ID, options.AssumeRole)
+		roleArn := fmt.Sprintf("arn:aws:iam::%s:role%s", account.ID, formattedRole)
 
 		for _, secHubRegion := range secHubRegions {
 			log.Printf("getting findings for account %v in %v", account.ID, secHubRegion)
