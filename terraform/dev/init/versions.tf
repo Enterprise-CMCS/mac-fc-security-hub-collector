@@ -7,13 +7,6 @@ terraform {
       version = "~>5.30.0"
     }
   }
-  backend "s3" {
-    bucket         = "security-hub-collector-dev-tfstate"
-    key            = "account/state"
-    region         = "us-east-1"
-    dynamodb_table = "security-hub-collector-dev-lock-table"
-    encrypt        = true
-  }
 }
 
 provider "aws" {

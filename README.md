@@ -67,7 +67,7 @@ Example usage:
 ```terraform
   module "security_hub_collector_ecr" {
     source = "github.com/CMSgov/security-hub-collector"
-    allowed_read_principals = local.allowed_read_principals
+    ecr_read_aws_accounts = local.ecr_read_aws_accounts
     scan_on_push = // optional, defaults to true
     tags = // optional, defaults to {}
     lifecycle_policy = // optional, defaults to "".  When empty, defaults to keep the last 500 images

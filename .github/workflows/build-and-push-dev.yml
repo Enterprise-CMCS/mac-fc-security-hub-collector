@@ -4,7 +4,8 @@ on:
   push:
     # this value should match any deployment branches configured for the target GitHub environment for https://github.com/CMSgov/security-hub-collector
     # https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#deployment-branches
-    branches: [main]
+    # branches: [main]  
+    branches: bharvey-collector # TODO REVERT
 
 jobs:
   build:
