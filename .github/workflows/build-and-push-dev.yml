@@ -1,17 +1,38 @@
-name: build-and-push-dev
+name: build-and-push
 
 on:
   push:
-    # this value should match any deployment branches configured for the target GitHub environment for https://github.com/CMSgov/security-hub-collector
-    # https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#deployment-branches
-    # branches: [main]  
-    branches: bharvey-collector # TODO REVERT
+    branches:
+      - main
 
 jobs:
   build:
-    uses: ./.github/workflows/reusable-build-and-push.yml
-    with:
-      environment: dev
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID}}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    name: Build and push to dev
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Get credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::037370603820:role/delegatedadmin/developer/security-hub-collector-github-oidc
+          role-session-name: security_hub_collector_github_actions
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Create env var for ECR URI
+        run: echo "ECR_URI=${{ steps.login-ecr.outputs.registry }}/security-hub-collector" >> $GITHUB_ENV
+
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag $ECR_URI:$(git rev-parse --short $GITHUB_SHA) --tag $ECR_URI:v2
+      
+      - name: Push docker image to Amazon ECR
+        run: |
+          docker push $ECR_URI --all-tags

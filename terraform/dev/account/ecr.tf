@@ -36,6 +36,7 @@ resource "aws_ecr_repository_policy" "this" {
   policy     = data.aws_iam_policy_document.cross_account_readonly.json
 }
 
+
 data "aws_iam_policy_document" "cross_account_readonly" {
   statement {
     sid = "CrossAccountReadOnly"

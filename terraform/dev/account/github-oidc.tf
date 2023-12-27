@@ -21,6 +21,8 @@ module "iam_github_oidc_role_github_actions_runner" {
   }
 }
 
+# GHA needs permission to push to ECR
+# https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-push.html
 data "aws_iam_policy_document" "github_actions_permissions" {
   statement {
     actions = [
@@ -32,13 +34,10 @@ data "aws_iam_policy_document" "github_actions_permissions" {
   statement {
     actions = [
       "ecr:CompleteLayerUpload",
-      "ecr:GetAuthorizationToken",
       "ecr:UploadLayerPart",
       "ecr:InitiateLayerUpload",
       "ecr:BatchCheckLayerAvailability",
-      "ecr:BatchGetImage",
       "ecr:PutImage",
-      "ecr:TagResource"
     ]
     resources = ["arn:aws:ecr:us-east-1:${data.aws_caller_identity.current.account_id}:repository/security-hub-collector"]
   }
