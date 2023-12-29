@@ -55,7 +55,8 @@ local-collector-test
 
 ## Terraform
 
-The repo contains Terraform for 
+The repo contains Terraform for:
+
 - an ECR repo that hosts the Collector images, which is deployed in the MACBIS Shared DSO dev account. Teams that want to pull this image have their AWS account IDs whitelisted in the `ecr_read_account_ids` list variable in `terraform/dev/account/terraform.tfvars`. Terraform must be applied if this list is updated
 - those IAM resources needed for the `build-and-push-dev` workflow
 
@@ -63,7 +64,7 @@ The repo contains Terraform for
 
 ### build-and-push
 
-This workflow builds and pushes the Collector image to a private ECR registry in MACBIS Shared DSO dev. It tags the image with the SHA and the value `v2`, to signify a breaking change in the team map schema from the previous release tag, `latest`. We have deprecated the `latest` tag, but the image with this tag should not be removed from the repo because it is in use.   
+This workflow builds and pushes the Collector image to a private ECR registry in MACBIS Shared DSO dev. It tags the image with the SHA and the value `v2`, to signify a breaking change in the team map schema from the previous release tag, `latest`. We have deprecated the `latest` tag, but the image with this tag should not be removed from the repo because it is in use.
 
 ### validate
 

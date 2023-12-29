@@ -32,7 +32,7 @@ jobs:
 
       - name: Build the Docker image
         run: docker build . --file Dockerfile --tag $ECR_URI:$(git rev-parse --short $GITHUB_SHA) --tag $ECR_URI:v2
-      
+
       - name: Push docker image to Amazon ECR
         run: |
           docker push $ECR_URI --all-tags

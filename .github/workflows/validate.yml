@@ -33,6 +33,6 @@ jobs:
 
     - name: run go tests
       run: go test -v ./pkg/...
-      
+
     - name: build the Docker image
       run: docker build . --file Dockerfile
