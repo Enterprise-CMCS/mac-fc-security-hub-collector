@@ -7,7 +7,7 @@ This tool pulls findings from AWS Security Hub and outputs them for consumption 
 ## Installation
 
 ```sh
-go get -u github.com/CMSgov/security-hub-collector
+go get -u github.com/Enterprise-CMCS/mac-fc-security-hub-collector
 ```
 
 ## Usage
@@ -57,10 +57,10 @@ local-collector-test
 
 The repo contains Terraform for:
 
-- an ECR repo that hosts the Collector images, which is deployed in the MACBIS Shared DSO dev account. Teams that want to pull this image have their AWS account IDs whitelisted in the `ecr_read_account_ids` list variable in `terraform/dev/account/terraform.tfvars`. Terraform must be applied if this list is updated
+- an ECR repo that hosts the Collector image, which is deployed in the `MACBIS Shared DSO Dev` account. A team's AWS account ID must be on the access list to have permission to pull the Collector image. The access list is maintained via the `ecr_read_account_ids` variable in `terraform/dev/account/terraform.tfvars`. To request access, please open a Jira ticket in the `CMCS-MACBIS-DSO` project 
 - those IAM resources needed for the `build-and-push-dev` workflow
 
-## GitHub Action Workflows
+## GitHub Actions Workflows
 
 ### build-and-push
 

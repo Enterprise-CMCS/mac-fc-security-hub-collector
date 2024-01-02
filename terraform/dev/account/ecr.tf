@@ -59,7 +59,7 @@ data "aws_iam_policy_document" "cross_account_readonly" {
   }
 
   statement {
-    sid = ""
+    sid = "GetAuthToken"
 
     effect = "Allow"
 

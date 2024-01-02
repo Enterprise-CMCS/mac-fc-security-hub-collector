@@ -4,6 +4,9 @@ resource "aws_dynamodb_table" "lock_table" {
   write_capacity              = 20
   hash_key                    = "LockID"
   deletion_protection_enabled = true
+  point_in_time_recovery {
+    enabled = true
+  }
 
   attribute {
     name = "LockID"
