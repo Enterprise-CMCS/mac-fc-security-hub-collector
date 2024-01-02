@@ -57,7 +57,7 @@ local-collector-test
 
 The repo contains Terraform for:
 
-- an ECR repo that hosts the Collector image, which is deployed in the `MACBIS Shared DSO Dev` account. A team's AWS account ID must be on the access list to have permission to pull the Collector image. The access list is maintained via the `ecr_read_account_ids` variable in `terraform/dev/account/terraform.tfvars`. To request access, please open a Jira ticket in the `CMCS-MACBIS-DSO` project 
+- an ECR repo that hosts the Collector image, which is deployed in the `MACBIS Shared DSO Dev` account. A team's AWS account ID must be on the access list to have permission to pull the Collector image. The access list is maintained via the `ecr_read_account_ids` variable in `terraform/dev/account/terraform.tfvars`. To request access, please open a Jira ticket in the `CMCS-MACBIS-DSO` project
 - those IAM resources needed for the `build-and-push-dev` workflow
 
 ## GitHub Actions Workflows
