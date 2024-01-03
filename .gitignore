@@ -1,3 +1,5 @@
 bin/
 dist/
 manual_test_team_map.json
+.terraform
+*.tfstate.backup
