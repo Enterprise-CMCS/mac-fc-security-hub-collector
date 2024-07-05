@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/CMSGov/security-hub-collector/pkg/helpers"
 )
@@ -32,8 +33,9 @@ type Team struct {
 
 // Account is a struct describing a single account for a team
 type Account struct {
-	ID          string `json:"id"`
-	Environment string `json:"environment"`
+	ID              string `json:"id"`
+	Environment     string `json:"environment"`
+	RoleARNOverride string `json:"roleArnOverride,omitempty"`
 }
 
 // ParseTeamMap takes a path to a team mapping JSON file, reads the file, and returns a Go map of Accounts to team names
@@ -99,6 +101,12 @@ func (t *Teams) accountsToTeamNames() (map[Account]string, error) {
 			if hasAccount(a, account.ID) {
 				return nil, &duplicateAccountIDError{
 					message: fmt.Sprintf("duplicate account ID: %s", account.ID),
+				}
+			}
+
+			if account.RoleARNOverride != "" {
+				if !strings.HasPrefix(account.RoleARNOverride, "arn:") {
+					return nil, fmt.Errorf("invalid role ARN override for account %s: %s. ARN must start with 'arn:'", account.ID, account.RoleARNOverride)
 				}
 			}
 			a[account] = team.Name

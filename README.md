@@ -2,7 +2,7 @@
 
 ## Description
 
-This tool pulls findings from AWS Security Hub and outputs them for consumption by visualization tools. To use this tool, you need a cross-account role that is valid for all accounts listed in the team map provided to the tool.
+This tool pulls findings from AWS Security Hub and outputs them for consumption by visualization tools. To use this tool, you need a cross-account role ARN that is valid for all accounts listed in the team map provided to the tool. You can also specify custom role ARNs for specific accounts if the role name is not consistent across accounts.
 
 ## Installation
 
@@ -18,7 +18,7 @@ To display a full list of CLI options, build the application and run `security-h
 
 
 You will need to create a team map file with a JSON object that describes
-your teams based on account numbers and environments. For example:
+your teams based on account numbers, environments and optional role ARN overrides. For example:
 
 ```json
 {
@@ -26,13 +26,15 @@ your teams based on account numbers and environments. For example:
     {
       "accounts": [
         { "id": "000000000001", "environment": "dev" },
-        { "id": "000000000011", "environment": "test" }
+        { "id": "000000000011", "environment": "test", "roleArnOverride": "arn:aws:iam::000000000011:role/CustomRole" }
       ],
       "name":"My Team"
     }
   ]
 }
 ```
+
+The roleArnOverride field is optional. If specified, it will be used instead of the default role ARN provided in the command line arguments for that specific account.
 
 ## Run Docker Image Locally
 
@@ -48,7 +50,7 @@ To run the Docker image locally for testing, do the following:
 docker run \
 -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID -e TEAM_MAP \
 -e AWS_REGION={region}
--e ASSUME_ROLE={role name} \
+-e ASSUME_ROLE={full role ARN} \
 -e S3_BUCKET_PATH={bucket name} \
 local-collector-test
 ```
