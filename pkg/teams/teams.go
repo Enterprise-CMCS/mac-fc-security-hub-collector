@@ -6,8 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/CMSGov/security-hub-collector/pkg/helpers"
 	"github.com/aws/aws-sdk-go/aws/arn"
+
+	"github.com/CMSGov/security-hub-collector/pkg/helpers"
 )
 
 type duplicateAccountIDError struct {
