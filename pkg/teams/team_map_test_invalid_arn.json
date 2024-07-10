@@ -1,18 +1,18 @@
 {
   "teams": [
     {
-      "name": "Test Team 1",
       "accounts": [
         {
-          "id": "account 1",
           "environment": "dev",
+          "id": "account 1",
           "roleArnOverride": "invalid:arn:format"
         },
         {
-          "id": "account 2",
-          "environment": "prod"
+          "environment": "prod",
+          "id": "account 2"
         }
-      ]
+      ],
+      "name": "Test Team 1"
     }
   ]
 }
