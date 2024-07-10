@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go/aws/arn"
 
 	"github.com/CMSGov/security-hub-collector/internal/aws/client"
 	"github.com/CMSGov/security-hub-collector/pkg/helpers"
@@ -127,8 +128,8 @@ func main() {
 		log.Fatalf("could not parse options: %v", err)
 	}
 
-	if !strings.HasPrefix(options.AssumeRoleARN, "arn:") {
-		log.Fatalf("Invalid default role ARN format: %s. ARN must start with 'arn:'", options.AssumeRoleARN)
+	if !arn.IsARN(options.AssumeRoleARN) {
+		log.Fatalf("invalid default role ARN format: %s input must be a valid Role ARN", options.AssumeRoleARN)
 	}
 
 	collectFindings(options.SecurityHubRegions)

@@ -3,6 +3,7 @@ module github.com/CMSGov/security-hub-collector
 go 1.19
 
 require (
+	github.com/aws/aws-sdk-go v1.54.17
 	github.com/aws/aws-sdk-go-v2 v1.17.7
 	github.com/aws/aws-sdk-go-v2/config v1.18.19
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.18

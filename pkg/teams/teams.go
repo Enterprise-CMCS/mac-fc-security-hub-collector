@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/CMSGov/security-hub-collector/pkg/helpers"
+	"github.com/aws/aws-sdk-go/aws/arn"
 )
 
 type duplicateAccountIDError struct {
@@ -105,8 +105,8 @@ func (t *Teams) accountsToTeamNames() (map[Account]string, error) {
 			}
 
 			if account.RoleARNOverride != "" {
-				if !strings.HasPrefix(account.RoleARNOverride, "arn:") {
-					return nil, fmt.Errorf("invalid role ARN override for account %s: %s. ARN must start with 'arn:'", account.ID, account.RoleARNOverride)
+				if !arn.IsARN(account.RoleARNOverride) {
+					return nil, fmt.Errorf("invalid role ARN override for account %s: %s Input must be a valid Role ARN", account.ID, account.RoleARNOverride)
 				}
 			}
 			a[account] = team.Name
