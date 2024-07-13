@@ -81,7 +81,7 @@ module "security_hub_collector_runner" {
   task_name      = "scheduled-collector"
   repo_arn       = "arn:aws:ecr:us-east-1:037370603820:repository/security-hub-collector"
   repo_url       = "037370603820.dkr.ecr.us-east-1.amazonaws.com/security-hub-collector"
-  repo_tag       = "latest"
+  repo_tag       = "36fbe72"
   ecs_vpc_id     = var.ecs_vpc_id
   ecs_subnet_ids = var.ecs_subnet_ids
   schedule_task_expression  = var.schedule_task_expression
@@ -94,15 +94,16 @@ module "security_hub_collector_runner" {
   assign_public_ip  = var.assign_public_ip
   role_path         = "/delegatedadmin/developer/"
   permissions_boundary = "arn:aws:iam::037370603820:policy/cms-cloud-admin/developer-boundary-policy"
-  scheduled_task_enabled = false
-  team_map = base64encode(jsonencode({
-    teams = [
-      {
-        accounts = [
-          { id = "116229642442", environment = "dev" }
-        ],
-        name = "My Team"
-      }
-    ]
-  }))
+  scheduled_task_enabled = true
+  team_map = base64encode(file("${path.module}/team_map.json"))
+  #team_map = base64encode(jsonencode({
+  #  teams = [
+  #    {
+  #      accounts = [
+  #        { id = "116229642442", environment = "dev", "roleArn": "arn:aws:iam::116229642442:role/security-hub-collector"}
+  #      ],
+  #      name = "My Team"
+  #    }
+  #  ]
+  #}))
 }

@@ -9,10 +9,10 @@ import (
 )
 
 var expectedAccountsToTeams = map[Account]string{
-	{ID: "account 1", Environment: "dev"}:   "Test Team 1",
-	{ID: "account 11", Environment: "test"}: "Test Team 1",
-	{ID: "account 2", Environment: "impl"}:  "Test Team 2",
-	{ID: "account 22", Environment: "prod"}: "Test Team 2",
+	{ID: "account 1", Environment: "dev", RoleARN: "arn:aws:iam::000000000011:role/CustomRole"}:   "Test Team 1",
+	{ID: "account 11", Environment: "test", RoleARN: "arn:aws:iam::000000000012:role/CustomRole"}: "Test Team 1",
+	{ID: "account 2", Environment: "impl", RoleARN: "arn:aws:iam::000000000013:role/CustomRole"}:  "Test Team 2",
+	{ID: "account 22", Environment: "prod", RoleARN: "arn:aws:iam::000000000014:role/CustomRole"}: "Test Team 2",
 }
 
 func TestParseTeamMap(t *testing.T) {
@@ -33,11 +33,11 @@ func TestParseTeamMap(t *testing.T) {
 		t.Error("ERROR: didn't get expected error for duplicate account ID", err)
 	}
 
-	// Test invalid ARN override
+	// Test invalid ARN
 	_, err = ParseTeamMap("team_map_test_invalid_arn.json")
 	if err == nil {
-		t.Error("ERROR: expected error for invalid ARN override, but got nil")
-	} else if !strings.Contains(err.Error(), "invalid role ARN override for account") {
+		t.Error("ERROR: expected error for invalid ARN, but got nil")
+	} else if !strings.Contains(err.Error(), "invalid role ARN for account") {
 		t.Errorf("ERROR: unexpected error message for invalid ARN: %s", err)
 	}
 }

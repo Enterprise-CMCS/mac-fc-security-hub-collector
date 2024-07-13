@@ -36,7 +36,7 @@ type Team struct {
 type Account struct {
 	ID              string `json:"id"`
 	Environment     string `json:"environment"`
-	RoleARNOverride string `json:"roleArnOverride,omitempty"`
+	RoleARN string `json:"roleArn"`
 }
 
 // ParseTeamMap takes a path to a team mapping JSON file, reads the file, and returns a Go map of Accounts to team names
@@ -105,10 +105,8 @@ func (t *Teams) accountsToTeamNames() (map[Account]string, error) {
 				}
 			}
 
-			if account.RoleARNOverride != "" {
-				if !arn.IsARN(account.RoleARNOverride) {
-					return nil, fmt.Errorf("invalid role ARN override for account %s: %s Input must be a valid Role ARN", account.ID, account.RoleARNOverride)
-				}
+			if !arn.IsARN(account.RoleARN) {
+				return nil, fmt.Errorf("invalid role ARN override for account %s: %s Input must be a valid Role ARN", account.ID, account.RoleARN)
 			}
 			a[account] = team.Name
 		}

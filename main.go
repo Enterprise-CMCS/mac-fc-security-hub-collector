@@ -9,7 +9,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go/aws/arn"
 
 	"github.com/CMSGov/security-hub-collector/internal/aws/client"
 	"github.com/CMSGov/security-hub-collector/pkg/helpers"
@@ -23,7 +22,6 @@ import (
 
 // Options describes the command line options available.
 type Options struct {
-	AssumeRoleARN      string   `short:"a" long:"assume-role-arn" required:"true" description:"Default Role ARN to assume when collecting across all accounts. Can be overridden for specific accounts in the team map file."`
 	OutputFileName     string   `short:"o" long:"output" required:"false" description:"File to direct output to." default:"SecurityHub-Findings.csv"`
 	S3Region           string   `short:"s" long:"s3-region" env:"AWS_REGION" required:"false" description:"AWS region to use for s3 uploads."`
 	SecurityHubRegions []string `short:"r" long:"sechub-regions" required:"false" default:"us-east-1" default:"us-west-2" description:"AWS regions to use for Security Hub findings."`
@@ -106,10 +104,7 @@ func collectFindings(secHubRegions []string) {
 	}
 
 	for account, teamName := range accountsToTeams {
-		roleArn := options.AssumeRoleARN
-		if account.RoleARNOverride != "" {
-			roleArn = account.RoleARNOverride
-		}
+		roleArn := account.RoleARN
 
 		for _, secHubRegion := range secHubRegions {
 			log.Printf("getting findings for account %v in %v", account.ID, secHubRegion)
@@ -126,10 +121,6 @@ func main() {
 	_, err := parser.Parse()
 	if err != nil {
 		log.Fatalf("could not parse options: %v", err)
-	}
-
-	if !arn.IsARN(options.AssumeRoleARN) {
-		log.Fatalf("invalid default role ARN format: %s input must be a valid Role ARN", options.AssumeRoleARN)
 	}
 
 	collectFindings(options.SecurityHubRegions)

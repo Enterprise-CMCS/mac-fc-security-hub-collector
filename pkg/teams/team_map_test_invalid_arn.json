@@ -5,7 +5,7 @@
         {
           "environment": "dev",
           "id": "account 1",
-          "roleArnOverride": "invalid:arn:format"
+          "roleArn": "invalid:arn:format"
         },
         {
           "environment": "prod",
