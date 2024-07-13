@@ -1,0 +1,9 @@
+variable "ecs_vpc_id" {}
+variable "ecs_subnet_ids" {}
+variable "security_hub_collector_results_bucket_name" {}
+variable "schedule_task_expression" {}
+variable "output_path" {}
+variable "s3_key" {}
+variable "assume_role" {}
+variable "aws_cloudwatch_log_group_name" {}
+variable "assign_public_ip" {}
