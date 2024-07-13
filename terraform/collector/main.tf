@@ -1,13 +1,30 @@
 ########## Building in us-east-1 ##########
 provider "aws" {
   region = "us-east-1"
+  allowed_account_ids = ["037370603820"]
+
+  default_tags {
+    tags = {
+      Maintainer  = "cms-macfc+archive@corbalt.com"
+      Owner       = "cms-macfc+archive@corbalt.com"
+      Environment = "dev"
+      Application = "mac-fc-security-hub-collector"
+      Business    = "MACBIS"
+      Automated   = "Terraform"
+      stack       = "dev"
+    }
+  }
 }
 
-#terraform {
-#  backend "s3" {
-#    region  = "us-east-1"
-#  }
-#}
+terraform {
+  backend "s3" {
+    region         = "us-east-1"
+    bucket         = "security-hub-collector-dev-tfstate"
+    key            = "app/state"
+    dynamodb_table = "security-hub-collector-dev-lock-table"
+    encrypt        = true
+  }
+}
 
 ########## Create s3 bucket for storing the collected findings ##########
 resource "aws_s3_bucket" "security_hub_collector" {
@@ -75,13 +92,14 @@ resource "aws_ecs_cluster" "security_hub_collector_runner" {
 
 ########## Use the securityhub collector runner module ##########
 module "security_hub_collector_runner" {
-  source      = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=9b76aea273ce9c27c50257c10b23ae921ab99416"
+  source      = "/home/acremins/corbalt/github.com/Enterprise-CMCS/mac-fc-security-hub-collector-ecs-runner"
+  #source      = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=9b76aea273ce9c27c50257c10b23ae921ab99416" TODO: Remove hardcoded path and update ref once security-hub-collector-ecs-runner PR is merged
   app_name    = "security-hub"
   environment = "dev"
   task_name      = "scheduled-collector"
   repo_arn       = "arn:aws:ecr:us-east-1:037370603820:repository/security-hub-collector"
   repo_url       = "037370603820.dkr.ecr.us-east-1.amazonaws.com/security-hub-collector"
-  repo_tag       = "36fbe72"
+  repo_tag       = "d93a473"
   ecs_vpc_id     = var.ecs_vpc_id
   ecs_subnet_ids = var.ecs_subnet_ids
   schedule_task_expression  = var.schedule_task_expression
@@ -90,20 +108,9 @@ module "security_hub_collector_runner" {
   output_path       = var.output_path  //optional
   s3_results_bucket = var.security_hub_collector_results_bucket_name
   s3_key            = var.s3_key //optional
-  assume_role       = var.assume_role    // the role to assume if collecting security hub results across accounts
   assign_public_ip  = var.assign_public_ip
   role_path         = "/delegatedadmin/developer/"
   permissions_boundary = "arn:aws:iam::037370603820:policy/cms-cloud-admin/developer-boundary-policy"
-  scheduled_task_enabled = true
   team_map = base64encode(file("${path.module}/team_map.json"))
-  #team_map = base64encode(jsonencode({
-  #  teams = [
-  #    {
-  #      accounts = [
-  #        { id = "116229642442", environment = "dev", "roleArn": "arn:aws:iam::116229642442:role/security-hub-collector"}
-  #      ],
-  #      name = "My Team"
-  #    }
-  #  ]
-  #}))
+  scheduled_task_state = "ENABLED" #Set to DISABLED to stop scheduled execution
 }
