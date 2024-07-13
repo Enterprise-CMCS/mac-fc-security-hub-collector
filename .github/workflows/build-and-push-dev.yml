@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - acremins-multi-role #TODO: Remove
 
 jobs:
   build:
