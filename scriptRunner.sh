@@ -9,7 +9,6 @@ security-hub-collector \
   -m teammap.json \
   ${OUTPUT:+-o "$OUTPUT"} \
   ${S3_KEY:+-k "$S3_KEY"} \
-  ${ASSUME_ROLE:+-a "$ASSUME_ROLE"} \
   ${S3_BUCKET_PATH:+-b "$S3_BUCKET_PATH"}
 
 echo "Task complete"
