@@ -117,8 +117,7 @@ resource "aws_ecs_cluster" "security_hub_collector_runner" {
 
 ########## Use the securityhub collector runner module ##########
 module "security_hub_collector_runner" {
-  source = "/home/acremins/corbalt/github.com/Enterprise-CMCS/mac-fc-security-hub-collector-ecs-runner"
-  #source      = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=9b76aea273ce9c27c50257c10b23ae921ab99416" TODO: Remove hardcoded path and update ref once security-hub-collector-ecs-runner PR is merged
+  source      = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=795330487905a32ae3bc9420c40abdd745fff327"
   app_name                  = "security-hub"
   environment               = "dev"
   task_name                 = "scheduled-collector"
