@@ -34,6 +34,36 @@ terraform {
   }
 }
 
+########## Create a test assume role ########
+
+data "aws_iam_policy" "security_hub_read_only" {
+  name = "AWSSecurityHubReadOnlyAccess"
+}
+
+resource "aws_iam_role" "security_hub_collector" {
+  name                 = "security-hub-collector"
+  path                 = "/delegatedadmin/developer/"
+  permissions_boundary = "arn:aws:iam::037370603820:policy/cms-cloud-admin/developer-boundary-policy"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          AWS = ["arn:aws:iam::037370603820:root"]
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "security_hub_read_only" {
+  role       = aws_iam_role.security_hub_collector.name
+  policy_arn = data.aws_iam_policy.security_hub_read_only.arn
+}
+
 ########## Create s3 bucket for storing the collected findings ##########
 resource "aws_s3_bucket" "security_hub_collector" {
   bucket = var.security_hub_collector_results_bucket_name
