@@ -28,11 +28,6 @@ variable "s3_key" {
   type        = string
 }
 
-variable "assume_role" {
-  description = "The ARN of the IAM role to be assumed by the ECS task"
-  type        = string
-}
-
 variable "aws_cloudwatch_log_group_name" {
   description = "The name of the CloudWatch log group where ECS task logs will be sent"
   type        = string

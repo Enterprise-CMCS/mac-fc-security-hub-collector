@@ -5,7 +5,7 @@
         {
           "id": "037370603820",
           "environment": "dev",
-          "roleArn": "arn:aws:iam::037370603820:role/security-hub-collector"
+          "roleArn": "arn:aws:iam::037370603820:role/delegatedadmin/developer/security-hub-collector"
         }
       ],
       "name": "MAC-FC"
