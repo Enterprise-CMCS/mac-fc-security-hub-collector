@@ -17,6 +17,14 @@ provider "aws" {
 }
 
 terraform {
+  required_version = "= 1.5.2"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.58.0"
+    }
+  }
+
   backend "s3" {
     region         = "us-east-1"
     bucket         = "security-hub-collector-dev-tfstate"
