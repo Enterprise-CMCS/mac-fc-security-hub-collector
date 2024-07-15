@@ -144,5 +144,5 @@ module "security_hub_collector_runner" {
   role_path                 = "/delegatedadmin/developer/"
   permissions_boundary      = "arn:aws:iam::037370603820:policy/cms-cloud-admin/developer-boundary-policy"
   team_map                  = base64encode(file("${path.module}/team_map.json"))
-  scheduled_task_state      = "DISABLED" #Set to DISABLED to stop scheduled execution
+  scheduled_task_state      = "ENABLED" #Set to DISABLED to stop scheduled execution
 }
