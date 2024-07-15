@@ -19,6 +19,14 @@ func (e *duplicateAccountIDError) Error() string {
 	return e.message
 }
 
+type invalidRoleARNError struct {
+	message string
+}
+
+func (e *invalidRoleARNError) Error() string {
+	return e.message
+}
+
 // Teams is a struct describing the format we expect in the JSON file
 // describing the team mappings
 type Teams struct {
@@ -34,9 +42,9 @@ type Team struct {
 
 // Account is a struct describing a single account for a team
 type Account struct {
-	ID              string `json:"id"`
-	Environment     string `json:"environment"`
-	RoleARN string `json:"roleArn"`
+	ID          string `json:"id"`
+	Environment string `json:"environment"`
+	RoleARN     string `json:"roleArn"`
 }
 
 // ParseTeamMap takes a path to a team mapping JSON file, reads the file, and returns a Go map of Accounts to team names
@@ -106,7 +114,9 @@ func (t *Teams) accountsToTeamNames() (map[Account]string, error) {
 			}
 
 			if !arn.IsARN(account.RoleARN) {
-				return nil, fmt.Errorf("invalid role ARN override for account %s: %s Input must be a valid Role ARN", account.ID, account.RoleARN)
+				return nil, &invalidRoleARNError{
+					message: fmt.Sprintf("invalid role ARN for account %s: %s Input must be a valid Role ARN", account.ID, account.RoleARN),
+				}
 			}
 			a[account] = team.Name
 		}

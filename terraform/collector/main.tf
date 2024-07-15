@@ -1,6 +1,6 @@
 ########## Building in us-east-1 ##########
 provider "aws" {
-  region = "us-east-1"
+  region              = "us-east-1"
   allowed_account_ids = ["037370603820"]
 
   default_tags {
@@ -29,20 +29,45 @@ terraform {
 ########## Create s3 bucket for storing the collected findings ##########
 resource "aws_s3_bucket" "security_hub_collector" {
   bucket = var.security_hub_collector_results_bucket_name
-  #acl    = "private"
+}
 
-  #lifecycle_rule {
-  #  enabled = true
+resource "aws_s3_bucket_server_side_encryption_configuration" "security_hub_collector" {
+  bucket = aws_s3_bucket.security_hub_collector.id
 
-   # expiration {
-   #   days = 10
-   # }
-  #}
-
-  tags = {
-    Automation  = "Terraform"
-    Environment = "dev"
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
   }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "security_hub_collector" {
+  bucket = aws_s3_bucket.security_hub_collector.id
+
+  rule {
+    id     = "security-hub-collector"
+    status = "Enabled"
+
+    expiration {
+      days = 90
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "security_hub_collector" {
+  bucket = aws_s3_bucket.security_hub_collector.id
+
+  # Block new public ACLs and uploading public objects
+  block_public_acls = true
+
+  # Retroactively remove public access granted through public ACLs
+  ignore_public_acls = true
+
+  # Block new public bucket policies
+  block_public_policy = true
+
+  # Retroactively block public and cross-account access if bucket has public policies
+  restrict_public_buckets = true
 }
 
 resource "aws_s3_bucket_policy" "security_hub_collector_bucket_policy" {
@@ -62,19 +87,19 @@ resource "aws_s3_bucket_policy" "security_hub_collector_bucket_policy" {
         ]
       },
       {
-        Action    = "s3:*"
+        Action = "s3:*"
         Condition = {
-            Bool = {
-              "aws:SecureTransport" = "false",
-            }
+          Bool = {
+            "aws:SecureTransport" = "false",
+          }
         }
         Effect    = "Deny"
         Principal = "*"
-        Resource  = [
-              aws_s3_bucket.security_hub_collector.arn,
-            "${aws_s3_bucket.security_hub_collector.arn}/*",
+        Resource = [
+          aws_s3_bucket.security_hub_collector.arn,
+          "${aws_s3_bucket.security_hub_collector.arn}/*",
         ]
-        Sid       = "AllowSSLRequestsOnly"
+        Sid = "AllowSSLRequestsOnly"
       }
     ]
   })
@@ -87,30 +112,30 @@ resource "aws_cloudwatch_log_group" "aws-scanner-inspec" {
 }
 
 resource "aws_ecs_cluster" "security_hub_collector_runner" {
-  name = "security_hub_collector"
-    }
+  name = "security-hub-collector"
+}
 
 ########## Use the securityhub collector runner module ##########
 module "security_hub_collector_runner" {
-  source      = "/home/acremins/corbalt/github.com/Enterprise-CMCS/mac-fc-security-hub-collector-ecs-runner"
+  source = "/home/acremins/corbalt/github.com/Enterprise-CMCS/mac-fc-security-hub-collector-ecs-runner"
   #source      = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=9b76aea273ce9c27c50257c10b23ae921ab99416" TODO: Remove hardcoded path and update ref once security-hub-collector-ecs-runner PR is merged
-  app_name    = "security-hub"
-  environment = "dev"
-  task_name      = "scheduled-collector"
-  repo_arn       = "arn:aws:ecr:us-east-1:037370603820:repository/security-hub-collector"
-  repo_url       = "037370603820.dkr.ecr.us-east-1.amazonaws.com/security-hub-collector"
-  repo_tag       = "d93a473"
-  ecs_vpc_id     = var.ecs_vpc_id
-  ecs_subnet_ids = var.ecs_subnet_ids
+  app_name                  = "security-hub"
+  environment               = "dev"
+  task_name                 = "scheduled-collector"
+  repo_arn                  = "arn:aws:ecr:us-east-1:037370603820:repository/security-hub-collector"
+  repo_url                  = "037370603820.dkr.ecr.us-east-1.amazonaws.com/security-hub-collector"
+  repo_tag                  = "d93a473"
+  ecs_vpc_id                = var.ecs_vpc_id
+  ecs_subnet_ids            = var.ecs_subnet_ids
   schedule_task_expression  = var.schedule_task_expression
   logs_cloudwatch_group_arn = aws_cloudwatch_log_group.aws-scanner-inspec.arn
   ecs_cluster_arn           = aws_ecs_cluster.security_hub_collector_runner.arn
-  output_path       = var.output_path  //optional
-  s3_results_bucket = var.security_hub_collector_results_bucket_name
-  s3_key            = var.s3_key //optional
-  assign_public_ip  = var.assign_public_ip
-  role_path         = "/delegatedadmin/developer/"
-  permissions_boundary = "arn:aws:iam::037370603820:policy/cms-cloud-admin/developer-boundary-policy"
-  team_map = base64encode(file("${path.module}/team_map.json"))
-  scheduled_task_state = "ENABLED" #Set to DISABLED to stop scheduled execution
+  output_path               = var.output_path //optional
+  s3_results_bucket         = var.security_hub_collector_results_bucket_name
+  s3_key                    = var.s3_key //optional
+  assign_public_ip          = var.assign_public_ip
+  role_path                 = "/delegatedadmin/developer/"
+  permissions_boundary      = "arn:aws:iam::037370603820:policy/cms-cloud-admin/developer-boundary-policy"
+  team_map                  = base64encode(file("${path.module}/team_map.json"))
+  scheduled_task_state      = "DISABLED" #Set to DISABLED to stop scheduled execution
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 	"testing"
 )
 
@@ -27,7 +26,7 @@ func TestParseTeamMap(t *testing.T) {
 
 	// this test checks that a duplicate account ID is caught
 	_, err = ParseTeamMap("team_map_test_duplicate.json")
-	fmt.Printf("err: %v", err)
+	fmt.Printf("err: %v\n", err)
 	var duplicateAccountIDError *duplicateAccountIDError
 	if err == nil || !errors.As(err, &duplicateAccountIDError) {
 		t.Error("ERROR: didn't get expected error for duplicate account ID", err)
@@ -35,9 +34,9 @@ func TestParseTeamMap(t *testing.T) {
 
 	// Test invalid ARN
 	_, err = ParseTeamMap("team_map_test_invalid_arn.json")
-	if err == nil {
-		t.Error("ERROR: expected error for invalid ARN, but got nil")
-	} else if !strings.Contains(err.Error(), "invalid role ARN for account") {
-		t.Errorf("ERROR: unexpected error message for invalid ARN: %s", err)
+	fmt.Printf("err: %v\n", err)
+	var invalidRoleARNError *invalidRoleARNError
+	if err == nil || !errors.As(err, &invalidRoleARNError) {
+		t.Error("ERROR: didn't get expected error for invalid Role ARN", err)
 	}
 }

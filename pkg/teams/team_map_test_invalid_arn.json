@@ -9,7 +9,8 @@
         },
         {
           "environment": "prod",
-          "id": "account 2"
+          "id": "account 2",
+          "roleArn": "arn:aws:iam::000000000011:role/CustomRole"
         }
       ],
       "name": "Test Team 1"

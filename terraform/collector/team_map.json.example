@@ -1,0 +1,19 @@
+{
+  "teams": [
+    {
+      "accounts": [
+        {
+          "id": "XXXXXXXXX",
+          "environment": "dev",
+          "roleArn": "arn:aws:iam::XXXXXXXXX:role/security-hub-collector"
+        },
+        {
+          "id": "YYYYYYYYY",
+          "environment": "impl",
+          "roleArn": "arn:aws:iam::YYYYYYYYY:role/security-hub-collector"
+        }
+      ],
+      "name": "My Team"
+    }
+  ]
+}
