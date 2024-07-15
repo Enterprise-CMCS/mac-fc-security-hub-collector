@@ -25,8 +25,8 @@ your teams based on account numbers, environments and role ARN which will be use
   "teams": [
     {
       "accounts": [
-        { "id": "000000000001", "environment": "dev" },
-        { "id": "000000000011", "environment": "test", "roleArn": "arn:aws:iam::000000000011:role/CustomRole" }
+        { "id": "000000000001", "environment": "dev", "roleArn": "arn:aws:iam::000000000011:role/CustomRole" },
+        { "id": "000000000011", "environment": "test", "roleArn": "arn:aws:iam::000000000012:role/CustomRole" }
       ],
       "name":"My Team"
     }
