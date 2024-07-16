@@ -1,6 +1,7 @@
 name: build-and-push
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -31,7 +32,7 @@ jobs:
         run: echo "ECR_URI=${{ steps.login-ecr.outputs.registry }}/security-hub-collector" >> $GITHUB_ENV
 
       - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag $ECR_URI:$(git rev-parse --short $GITHUB_SHA) --tag $ECR_URI:v2
+        run: docker build . --file Dockerfile --tag $ECR_URI:$(git rev-parse --short $GITHUB_SHA)
 
       - name: Push docker image to Amazon ECR
         run: |

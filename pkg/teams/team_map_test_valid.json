@@ -4,11 +4,13 @@
       "accounts": [
         {
           "environment": "dev",
-          "id": "account 1"
+          "id": "account 1",
+          "roleArn": "arn:aws:iam::000000000011:role/CustomRole"
         },
         {
           "environment": "test",
-          "id": "account 11"
+          "id": "account 11",
+          "roleArn": "arn:aws:iam::000000000012:role/CustomRole"
         }
       ],
       "name": "Test Team 1"
@@ -17,11 +19,13 @@
       "accounts": [
         {
           "environment": "impl",
-          "id": "account 2"
+          "id": "account 2",
+          "roleArn": "arn:aws:iam::000000000013:role/CustomRole"
         },
         {
           "environment": "prod",
-          "id": "account 22"
+          "id": "account 22",
+          "roleArn": "arn:aws:iam::000000000014:role/CustomRole"
         }
       ],
       "name": "Test Team 2"

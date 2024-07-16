@@ -1,0 +1,14 @@
+{
+  "teams": [
+    {
+      "accounts": [
+        {
+          "environment": "dev",
+          "id": "037370603820",
+          "roleArn": "arn:aws:iam::037370603820:role/delegatedadmin/developer/security-hub-collector"
+        }
+      ],
+      "name": "MAC-FC"
+    }
+  ]
+}
