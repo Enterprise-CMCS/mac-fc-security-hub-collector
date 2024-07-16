@@ -37,3 +37,8 @@ variable "assign_public_ip" {
   description = "Whether to assign a public IP address to the ECS task"
   type        = bool
 }
+
+variable "repo_tag" {
+  description = "ECR Tag of the image to run in the ECS Task"
+  type        = string
+}
