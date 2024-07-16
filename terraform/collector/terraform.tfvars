@@ -6,3 +6,4 @@ output_path                                = ""
 s3_key                                     = ""
 aws_cloudwatch_log_group_name              = "security_hub_collector"
 assign_public_ip                           = true
+repo_tag                                   = "92dc46c"

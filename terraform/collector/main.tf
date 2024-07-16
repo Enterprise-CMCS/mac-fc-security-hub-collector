@@ -161,7 +161,7 @@ module "security_hub_collector_runner" {
   task_name                 = "scheduled-collector"
   repo_arn                  = "arn:aws:ecr:us-east-1:037370603820:repository/security-hub-collector"
   repo_url                  = "037370603820.dkr.ecr.us-east-1.amazonaws.com/security-hub-collector"
-  repo_tag                  = "d93a473"
+  repo_tag                  = var.repo_tag
   ecs_vpc_id                = var.ecs_vpc_id
   ecs_subnet_ids            = var.ecs_subnet_ids
   schedule_task_expression  = var.schedule_task_expression
