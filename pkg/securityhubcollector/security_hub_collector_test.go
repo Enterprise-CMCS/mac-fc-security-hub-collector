@@ -1,26 +1,22 @@
 package securityhubcollector
 
 import (
+	"log"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/securityhub/types"
+	"github.com/benbjohnson/clock"
+	"github.com/google/go-cmp/cmp"
 )
 
-// We have to make our own function to test whether our expected outputs
-// are equal.
-func outputEqual(a, b [][]string) bool {
-	if len(a) != len(b) {
-		return false
+func mustParseTime(s string) time.Time {
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		log.Fatalf("Error parsing time %q: %s", s, err)
 	}
-	for i, v := range a {
-		for e, x := range v {
-			if x != b[i][e] {
-				return false
-			}
-		}
-	}
-	return true
+	return t
 }
 
 type testCase struct {
@@ -44,6 +40,7 @@ func TestConvertFindingToRows(t *testing.T) {
 				CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
 				Description:  aws.String("Active Test Finding"),
 				ProductArn:   aws.String("arn:aws:securityhub:us-east-1::product/aws/securityhub"),
+				ProductName:  aws.String("Security Hub"),
 				RecordState:  types.RecordStateActive,
 				Resources: []types.Resource{
 					{
@@ -83,6 +80,8 @@ func TestConvertFindingToRows(t *testing.T) {
 					"2020-03-22T13:22:13.933Z",
 					"us-east-1",
 					"dev",
+					"Security Hub",
+					"01-01-2023",
 				},
 			},
 		},
@@ -96,6 +95,7 @@ func TestConvertFindingToRows(t *testing.T) {
 				CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
 				Description:  aws.String("MultiResource Test Finding"),
 				ProductArn:   aws.String("arn:aws:securityhub:us-west-2::product/aws/securityhub"),
+				ProductName:  aws.String("Security Hub"),
 				RecordState:  types.RecordStateActive,
 				Resources: []types.Resource{
 					{
@@ -140,6 +140,8 @@ func TestConvertFindingToRows(t *testing.T) {
 					"2020-03-22T13:22:13.933Z",
 					"us-west-2",
 					"impl",
+					"Security Hub",
+					"01-01-2023",
 				},
 				{
 					"Test Team 1",
@@ -158,6 +160,8 @@ func TestConvertFindingToRows(t *testing.T) {
 					"2020-03-22T13:22:13.933Z",
 					"us-west-2",
 					"impl",
+					"Security Hub",
+					"01-01-2023",
 				},
 			},
 		},
@@ -171,6 +175,7 @@ func TestConvertFindingToRows(t *testing.T) {
 				CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
 				Description:  aws.String("Active Test Finding"),
 				ProductArn:   aws.String("arn:aws:securityhub:us-east-1::product/aws/securityhub"),
+				ProductName:  aws.String("Security Hub"),
 				RecordState:  types.RecordStateActive,
 				Resources: []types.Resource{
 					{
@@ -210,6 +215,8 @@ func TestConvertFindingToRows(t *testing.T) {
 					"2020-03-22T13:22:13.933Z",
 					"us-east-1",
 					"prod",
+					"Security Hub",
+					"01-01-2023",
 				},
 			},
 		},
@@ -223,6 +230,7 @@ func TestConvertFindingToRows(t *testing.T) {
 				CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
 				Description:  aws.String("Suppressed Test Finding"),
 				ProductArn:   aws.String("arn:aws:securityhub:us-east-1::product/aws/securityhub"),
+				ProductName:  aws.String("Security Hub"),
 				RecordState:  types.RecordStateActive,
 				Resources: []types.Resource{
 					{
@@ -262,6 +270,8 @@ func TestConvertFindingToRows(t *testing.T) {
 					"2020-03-22T13:22:13.933Z",
 					"us-east-1",
 					"dev",
+					"Security Hub",
+					"01-01-2023",
 				},
 			},
 		},
@@ -271,9 +281,12 @@ func TestConvertFindingToRows(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := h.convertFindingToRows(tc.finding, tc.teamName, tc.environment)
-			if !outputEqual(actual, tc.expected) {
-				t.Errorf("ERROR: Finding conversion does not match expectations. \nExpected: %v\n Actual: %v", tc.expected, actual)
+			mockClock := clock.NewMock()
+			mockClock.Set(mustParseTime("2023-01-01"))
+
+			actual := h.convertFindingToRows(tc.finding, tc.teamName, tc.environment, mockClock)
+			if diff := cmp.Diff(tc.expected, actual); diff != "" {
+				t.Fatalf("Expected rows did not match actual: %s", diff)
 			}
 		})
 	}

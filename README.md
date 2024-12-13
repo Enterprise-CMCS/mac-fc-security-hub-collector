@@ -47,8 +47,8 @@ To run the Docker image locally for testing, do the following:
 ```bash
 docker run \
 -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID -e TEAM_MAP \
--e AWS_REGION={region}
--e S3_BUCKET_PATH={bucket name} \
+-e AWS_REGION=us-east-1 \
+-e S3_BUCKET_PATH=bharvey-test-distro \
 local-collector-test
 ```
 
@@ -63,7 +63,7 @@ The repo contains Terraform for:
 
 ### build-and-push
 
-This workflow builds and pushes the Collector image to a private ECR registry in MACBIS Shared DSO dev. It tags the image with the SHA and the value `v2`, to signify a breaking change in the team map schema from the previous release tag, `latest`. We have deprecated the `latest` tag, but the image with this tag should not be removed from the repo because it is in use.
+This workflow builds and pushes the Collector image to a private ECR registry in MACBIS Shared DSO dev. It tags the image with the SHA. We have deprecated the `latest` tag, but the image with this tag should not be removed from the ECR registry because it is in use.
 
 ### validate
 

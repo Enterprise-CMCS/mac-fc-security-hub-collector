@@ -45,9 +45,11 @@ func writeFindingsToS3() error {
 		key = options.S3Key
 	}
 
-	// Carve up things and throw in timestamp in the key
+	// Carve up things and throw in timestamp in the key.
+	// Use a daily timestamp so that multiple runs in the same day will overwrite
+	// the previous run's file with updated results for that day
 	current := time.Now()
-	suffix := current.Format("2006-01-02_15.04.05")
+	suffix := current.Format("01-02-2006")
 	ext := path.Ext(key)
 	fn := strings.TrimSuffix(key, ext)
 	key = fn + "_" + suffix + ext
