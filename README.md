@@ -2,7 +2,10 @@
 
 ## Description
 
-This tool pulls findings from AWS Security Hub and outputs them for consumption by visualization tools. To use this tool, you need a role ARN that is valid for each account listed in the team map provided to the tool.
+This tool pulls findings from AWS Security Hub and outputs them for consumption by visualization tools. To use this tool, you need
+- an Athena table of teams to accounts that follows the [format expected by the Athena library](https://github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis/blob/250739e71c9617344a584aab82d5785334c37bba/pkg/athenalib)
+- an S3 bucket for Athena query outputs
+- a role that is valid for each account listed in the map of accounts to teams provided to the tool
 
 ## Installation
 
@@ -16,39 +19,27 @@ go get -u github.com/Enterprise-CMCS/mac-fc-security-hub-collector
 
 To display a full list of CLI options, build the application and run `security-hub-collector -h`.
 
-
-You will need to create a team map file with a JSON object that describes
-your teams based on account numbers, environments and role ARN which will be used to query the account. For example:
-
-```json
-{
-  "teams": [
-    {
-      "accounts": [
-        { "id": "000000000011", "environment": "dev", "roleArn": "arn:aws:iam::000000000011:role/CustomRole" },
-        { "id": "000000000012", "environment": "test", "roleArn": "arn:aws:iam::000000000012:role/delegatedadmin/developer/AnotherCustomRole" }
-      ],
-      "name":"My Team"
-    }
-  ]
-}
-```
-
 ## Run Docker Image Locally
 
 To run the Docker image locally for testing, do the following:
 
-1. create a local `team_map.json` file based on the example above
-2. `export TEAM_MAP=$(cat team_map.json | base64)`
-3. set AWS creds in the environment (`AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID, AWS_SESSION_TOKEN`)
-4. `docker build . -t local-collector-test`
-5. run the image:
+1. Create a file at the top level called `docker-gitconfig` with the following content:
+   ```
+   [url "https://<username>:<personal access token>@github.com/Enterprise-CMCS/"]
+	  insteadOf = https://github.com/Enterprise-CMCS/
+   ```
+2. set AWS creds in the environment (`AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID, AWS_SESSION_TOKEN`)
+3. `docker build . -t local-collector-test`
+4. run the image:
 
 ```bash
 docker run \
--e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID -e TEAM_MAP \
+-e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID \
+-e ATHENA_TEAMS_TABLE=athenacurcfn_cms_cloud_cur_monthly.teams \
+-e QUERY_OUTPUT_LOCATION=s3://cms-macbis-cost-analysis/professor-mac/teams-query/ \
+-e COLLECTOR_ROLE_ARN=arn:aws:iam::037370603820:role/delegatedadmin/developer/security-hub-collector \
 -e AWS_REGION=us-east-1 \
--e S3_BUCKET_PATH=bharvey-test-distro \
+-e S3_BUCKET=bharvey-test-distro \
 local-collector-test
 ```
 

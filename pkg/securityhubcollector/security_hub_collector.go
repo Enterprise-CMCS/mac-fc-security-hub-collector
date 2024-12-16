@@ -10,12 +10,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/securityhub/types"
 
 	"github.com/CMSGov/security-hub-collector/internal/aws/client"
+	"github.com/CMSGov/security-hub-collector/pkg/teams"
 
 	"encoding/csv"
 	"os"
 
 	"github.com/benbjohnson/clock"
 )
+
+const crossAccountRolePath = "delegatedadmin/developer/ct-cmcs-mac-fc-cost-usage-role"
 
 // HubCollector is a generic struct used to hold setting info
 type HubCollector struct {
@@ -73,7 +76,7 @@ func (h *HubCollector) FlushAndClose() error {
 }
 
 // GetFindingsAndWriteToOutput - gets all security hub findings from a single AWS account and writes them to the output file
-func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName, environment, roleArn string) error {
+func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName string, account teams.Account) error {
 	// We want all the security findings that are active and not resolved.
 	params := &securityhub.GetFindingsInput{
 		Filters: &types.AwsSecurityFindingFilters{
@@ -93,7 +96,8 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName, envir
 		MaxResults: 100,
 	}
 
-	securityHubClient, err := client.MakeSecurityHubClient(secHubRegion, roleArn)
+	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", account.ID, crossAccountRolePath)
+	securityHubClient, err := client.MakeSecurityHubClient(secHubRegion, roleARN)
 	if err != nil {
 		return fmt.Errorf("could not make security hub client: %s", err)
 	}
@@ -104,7 +108,7 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName, envir
 		if err != nil {
 			return fmt.Errorf("could not get next page of findings: %s", err)
 		}
-		err = h.writeFindingsToOutput(page.Findings, teamName, environment)
+		err = h.writeFindingsToOutput(page.Findings, teamName, account.Environment)
 		if err != nil {
 			return fmt.Errorf("could not write findings to output: %s", err)
 		}

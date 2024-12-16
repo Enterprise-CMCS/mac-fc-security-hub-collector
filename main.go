@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go/aws/session"
 
 	"github.com/CMSGov/security-hub-collector/internal/aws/client"
 	"github.com/CMSGov/security-hub-collector/pkg/helpers"
@@ -22,12 +23,14 @@ import (
 
 // Options describes the command line options available.
 type Options struct {
-	OutputFileName     string   `short:"o" long:"output" required:"false" description:"File to direct output to." default:"SecurityHub-Findings.csv"`
-	S3Region           string   `short:"s" long:"s3-region" env:"AWS_REGION" required:"false" description:"AWS region to use for s3 uploads."`
-	SecurityHubRegions []string `short:"r" long:"sechub-regions" required:"false" default:"us-east-1" default:"us-west-2" description:"AWS regions to use for Security Hub findings."`
-	S3Bucket           string   `short:"b" long:"s3-bucket" required:"false" description:"S3 bucket to use to upload results. Optional, if not provided, results will not be uploaded to S3."`
-	S3Key              string   `short:"k" long:"s3-key" required:"false" description:"S3 bucket key, or path, to use to upload results."`
-	TeamMapFile        string   `short:"m" long:"team-map" required:"true" description:"JSON file containing team to account mappings."`
+	OutputFileName      string   `short:"o" long:"output" env:"OUTPUT_FILE" required:"false" description:"File to direct output to." default:"SecurityHub-Findings.csv"`
+	S3Region            string   `short:"s" long:"s3-region" env:"AWS_REGION" required:"false" description:"AWS region to use for s3 uploads."`
+	SecurityHubRegions  []string `short:"r" long:"sechub-regions" required:"false" default:"us-east-1" default:"us-west-2" description:"AWS regions to use for Security Hub findings."`
+	S3Bucket            string   `short:"b" long:"s3-bucket" required:"false" env:"S3_BUCKET" description:"S3 bucket to use to upload results. Optional, if not provided, results will not be uploaded to S3."`
+	S3Key               string   `short:"k" long:"s3-key" required:"false" env:"S3_KEY" description:"S3 bucket key, or path, to use to upload results."`
+	TeamsTable          string   `long:"teams-table" required:"true" env:"ATHENA_TEAMS_TABLE" description:"Athena table containing team to account mappings"`
+	QueryOutputLocation string   `long:"query-output" required:"true" env:"QUERY_OUTPUT_LOCATION" description:"S3 location for Athena query output"`
+	CollectorRoleARN    string   `long:"role-path" required:"true" env:"COLLECTOR_ROLE_ARN" description:"ARN of the AWS IAM role that allows the Collector to access Security Hub"`
 }
 
 var options Options
@@ -82,8 +85,8 @@ func writeFindingsToS3() error {
 	return nil
 }
 
-// collectFindings is doing the bulk of our work here; it reads in the
-// team map JSON file, builds the HubCollector object, writes headers to the output file, and processes findings
+// collectFindings is doing the bulk of our work here; it reads in the team map from Athena,
+// builds the HubCollector object, writes headers to the output file, and processes findings
 // depending on the definitions in the team map and the CLI options.
 func collectFindings(secHubRegions []string) {
 	h := securityhubcollector.HubCollector{}
@@ -100,17 +103,21 @@ func collectFindings(secHubRegions []string) {
 		}
 	}()
 
-	accountsToTeams, err := teams.ParseTeamMap(options.TeamMapFile)
+	// Create AWS SDK V1 session because athenalib requires it
+	sess := session.Must(session.NewSession())
 	if err != nil {
-		log.Fatalf("could not parse team map file: %v", err)
+		log.Fatalf("could not create AWS session: %v", err)
+	}
+
+	accountsToTeams, err := teams.GetTeamsFromAthena(sess, options.TeamsTable, options.QueryOutputLocation)
+	if err != nil {
+		log.Fatalf("could not load teams from Athena: %v", err)
 	}
 
 	for account, teamName := range accountsToTeams {
-		roleArn := account.RoleARN
-
 		for _, secHubRegion := range secHubRegions {
 			log.Printf("getting findings for account %v in %v", account.ID, secHubRegion)
-			err = h.GetFindingsAndWriteToOutput(secHubRegion, teamName, account.Environment, roleArn)
+			err = h.GetFindingsAndWriteToOutput(secHubRegion, teamName, account)
 			if err != nil {
 				log.Fatalf("could not get findings for account %v in %v: %v", account.ID, secHubRegion, err)
 			}
