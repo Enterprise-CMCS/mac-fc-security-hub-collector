@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -28,9 +29,10 @@ type Options struct {
 	SecurityHubRegions  []string `short:"r" long:"sechub-regions" required:"false" default:"us-east-1" default:"us-west-2" description:"AWS regions to use for Security Hub findings."`
 	S3Bucket            string   `short:"b" long:"s3-bucket" required:"false" env:"S3_BUCKET" description:"S3 bucket to use to upload results. Optional, if not provided, results will not be uploaded to S3."`
 	S3Key               string   `short:"k" long:"s3-key" required:"false" env:"S3_KEY" description:"S3 bucket key, or path, to use to upload results."`
-	TeamsTable          string   `long:"teams-table" required:"true" env:"ATHENA_TEAMS_TABLE" description:"Athena table containing team to account mappings"`
-	QueryOutputLocation string   `long:"query-output" required:"true" env:"QUERY_OUTPUT_LOCATION" description:"S3 location for Athena query output"`
-	CollectorRoleARN    string   `long:"role-path" required:"true" env:"COLLECTOR_ROLE_ARN" description:"ARN of the AWS IAM role that allows the Collector to access Security Hub"`
+	TeamMap             string   `short:"m" long:"team-map" required:"false" env:"TEAM_MAP" description:"JSON encoded string containing team to account mappings."`
+	TeamsTable          string   `short:"t" long:"teams-table" required:"false" env:"ATHENA_TEAMS_TABLE" description:"Athena table containing team to account mappings"`
+	QueryOutputLocation string   `long:"query-output" required:"false" env:"QUERY_OUTPUT_LOCATION" description:"S3 location for Athena query output"`
+	CollectorRoleARN    string   `long:"role-path" required:"false" env:"COLLECTOR_ROLE_ARN" description:"ARN of the AWS IAM role that allows the Collector to access Security Hub"`
 }
 
 var options Options
@@ -88,7 +90,18 @@ func writeFindingsToS3() error {
 // collectFindings is doing the bulk of our work here; it reads in the team map from Athena,
 // builds the HubCollector object, writes headers to the output file, and processes findings
 // depending on the definitions in the team map and the CLI options.
-func collectFindings(secHubRegions []string) {
+func collectFindings(secHubRegions []string) error {
+	// Check which source to use for team data and validate required fields
+	if options.TeamMap == "" && options.TeamsTable == "" {
+		return fmt.Errorf("either team map file and Athena teams must be specified")
+	}
+	if options.TeamMap != "" && options.TeamsTable != "" {
+		return fmt.Errorf("both team map file and Athena teams table specified; please use only one source of team map data")
+	}
+	if options.TeamsTable != "" && (options.CollectorRoleARN == "" || options.QueryOutputLocation == "") {
+		return fmt.Errorf("collector role ARN and query output location are required when using Athena teams table")
+	}
+
 	h := securityhubcollector.HubCollector{}
 	err := h.Initialize(options.OutputFileName)
 	if err != nil {
@@ -109,9 +122,19 @@ func collectFindings(secHubRegions []string) {
 		log.Fatalf("could not create AWS session: %v", err)
 	}
 
-	accountsToTeams, err := teams.GetTeamsFromAthena(sess, options.TeamsTable, options.QueryOutputLocation)
-	if err != nil {
-		log.Fatalf("could not load teams from Athena: %v", err)
+	var accountsToTeams map[teams.Account]string
+
+	// either get the map from the team map file or from Athena, depending on the specified CLI flags
+	if options.TeamMap != "" {
+		accountsToTeams, err = teams.ParseTeamMap(options.TeamMap)
+		if err != nil {
+			log.Fatalf("could not parse team map file: %v", err)
+		}
+	} else {
+		accountsToTeams, err = teams.GetTeamsFromAthena(sess, options.TeamsTable, options.QueryOutputLocation, options.CollectorRoleARN)
+		if err != nil {
+			log.Fatalf("could not load teams from Athena: %v", err)
+		}
 	}
 
 	for account, teamName := range accountsToTeams {
@@ -123,6 +146,8 @@ func collectFindings(secHubRegions []string) {
 			}
 		}
 	}
+
+	return nil
 }
 
 func main() {
@@ -132,7 +157,9 @@ func main() {
 		log.Fatalf("could not parse options: %v", err)
 	}
 
-	collectFindings(options.SecurityHubRegions)
+	if err := collectFindings(options.SecurityHubRegions); err != nil {
+		log.Fatalf("error collecting findings: %v", err)
+	}
 
 	if options.S3Bucket != "" {
 		err := writeFindingsToS3()

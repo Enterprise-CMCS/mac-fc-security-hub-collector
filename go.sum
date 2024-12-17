@@ -10,6 +10,8 @@ github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213215421-c27
 github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213215421-c27f9f860567/go.mod h1:Rpl2uKTJ4DPque6FoIbz2t25VBTw0nk8Wt+VvKff7y4=
 github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213221117-999a6627efd1 h1:z2mTAmD5djAZIiHPVW5MeQC5khY3osKaYe5oloRyTu4=
 github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213221117-999a6627efd1/go.mod h1:Rpl2uKTJ4DPque6FoIbz2t25VBTw0nk8Wt+VvKff7y4=
+github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241216204327-1ff4359b0f87 h1:A0GYwRu/Zun21lq8fQleq7Wdmpr7WKyrPfPqZyWfSOs=
+github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241216204327-1ff4359b0f87/go.mod h1:Rpl2uKTJ4DPque6FoIbz2t25VBTw0nk8Wt+VvKff7y4=
 github.com/aws/aws-sdk-go v1.54.17 h1:ZV/qwcCIhMHgsJ6iXXPVYI0s1MdLT+5LW28ClzCUPeI=
 github.com/aws/aws-sdk-go v1.54.17/go.mod h1:eRwEWoyTWFMVYVQzKMNHWP5/RV4xIUGMQfXQHfHkpNU=
 github.com/aws/aws-sdk-go-v2 v1.17.7 h1:CLSjnhJSTSogvqUGhIC6LqFKATMRexcxLZ0i/Nzk9Eg=

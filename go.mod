@@ -3,7 +3,7 @@ module github.com/CMSGov/security-hub-collector
 go 1.21.0
 
 require (
-	github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213221117-999a6627efd1
+	github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241216204327-1ff4359b0f87
 	github.com/aws/aws-sdk-go v1.54.17
 	github.com/aws/aws-sdk-go-v2 v1.17.7
 	github.com/aws/aws-sdk-go-v2/config v1.18.19

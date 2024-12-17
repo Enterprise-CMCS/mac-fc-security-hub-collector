@@ -1,0 +1,19 @@
+{
+  "teams": [
+    {
+      "accounts": [
+        {
+          "environment": "dev",
+          "id": "account 1",
+          "roleArn": "invalid:arn:format"
+        },
+        {
+          "environment": "prod",
+          "id": "account 2",
+          "roleArn": "arn:aws:iam::000000000011:role/CustomRole"
+        }
+      ],
+      "name": "Test Team 1"
+    }
+  ]
+}

@@ -31,17 +31,27 @@ To run the Docker image locally for testing, do the following:
 2. set AWS creds in the environment (`AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID, AWS_SESSION_TOKEN`)
 3. `docker build . -t local-collector-test`
 4. run the image:
-
-```bash
-docker run \
--e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID \
--e ATHENA_TEAMS_TABLE=athenacurcfn_cms_cloud_cur_monthly.teams \
--e QUERY_OUTPUT_LOCATION=s3://cms-macbis-cost-analysis/professor-mac/teams-query/ \
--e COLLECTOR_ROLE_ARN=arn:aws:iam::037370603820:role/delegatedadmin/developer/security-hub-collector \
--e AWS_REGION=us-east-1 \
--e S3_BUCKET=bharvey-test-distro \
-local-collector-test
-```
+   - using an Athena table
+   ```bash
+   docker run \
+   -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID \
+   -e ATHENA_TEAMS_TABLE=athenacurcfn_cms_cloud_cur_monthly.teams \
+   -e QUERY_OUTPUT_LOCATION=s3://cms-macbis-cost-analysis/professor-mac/teams-query/ \
+   -e COLLECTOR_ROLE_ARN=arn:aws:iam::037370603820:role/delegatedadmin/developer/security-hub-collector \
+   -e AWS_REGION=us-east-1 \
+   -e S3_BUCKET=bharvey-test-distro \
+   local-collector-test
+   ```
+   - using a team map
+   ```bash
+   export TEAM_MAP=$(cat ./terraform/collector/team_map.json)
+   docker run \
+   -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID \
+   -e TEAM_MAP \
+   -e AWS_REGION=us-east-1 \
+   -e S3_BUCKET=bharvey-test-distro \
+   local-collector-test
+   ```
 
 ## Terraform
 

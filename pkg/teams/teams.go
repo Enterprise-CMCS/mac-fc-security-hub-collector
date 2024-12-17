@@ -1,10 +1,13 @@
 package teams
 
 import (
+	"encoding/json"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis/pkg/athenalib"
+	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
@@ -24,19 +27,58 @@ func (e *duplicateAccountIDError) Error() string {
 	return e.message
 }
 
-type Account struct {
-	ID          string `json:"id"`          // AWS Account ID
-	Environment string `json:"environment"` // Environment (using account alias from Athena)
+type invalidRoleARNError struct {
+	message string
 }
 
-func GetTeamsFromAthena(sess *session.Session, teamsTable, queryOutputLocation string) (map[Account]string, error) {
-	// Load account information from Athena
+func (e *invalidRoleARNError) Error() string {
+	return e.message
+}
+
+// Teams is a struct describing the format we expect in the JSON file
+// describing the team mappings
+type Teams struct {
+	Teams []Team `json:"teams"`
+}
+
+// Team is a struct describing a single team and its accounts as we
+// expect in the JSON file describing team mappings
+type Team struct {
+	Name     string    `json:"name"`
+	Accounts []Account `json:"accounts"`
+}
+
+type Account struct {
+	ID          string
+	Environment string
+	RoleARN     string
+}
+
+// ParseTeamMap takes a JSON encoded string and returns a Go map of Accounts to team names
+func ParseTeamMap(jsonStr string) (accountsToTeams map[Account]string, err error) {
+	var teams Teams
+	decoder := json.NewDecoder(strings.NewReader(jsonStr))
+	decoder.DisallowUnknownFields()
+	err = decoder.Decode(&teams)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding team map: %s", err)
+	}
+
+	accountsToTeams, err = teams.accountsToTeamNames()
+	if err != nil {
+		return nil, fmt.Errorf("error parsing team map: %w", err)
+	}
+
+	return accountsToTeams, nil
+}
+
+// GetTeamsFromAthena loads a map of Accounts to team names from an Athena table
+func GetTeamsFromAthena(sess *session.Session, teamsTable, queryOutputLocation, roleARN string) (map[Account]string, error) {
 	accounts, err := athenalib.LoadTeams(sess, teamsTable, queryOutputLocation)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load teams from Athena: %w", err)
 	}
 
-	// Convert the Athena results into our account map format
 	accountsToTeams := make(map[Account]string)
 
 	for _, acct := range accounts {
@@ -50,7 +92,7 @@ func GetTeamsFromAthena(sess *session.Session, teamsTable, queryOutputLocation s
 			continue
 		}
 
-		// Check for duplicate account IDs
+		// check for duplicate account IDs
 		if hasAccount(accountsToTeams, acct.AWSAccountID) {
 			return nil, &duplicateAccountIDError{
 				message: fmt.Sprintf("duplicate account ID in Athena team data: %s", acct.AWSAccountID),
@@ -60,6 +102,7 @@ func GetTeamsFromAthena(sess *session.Session, teamsTable, queryOutputLocation s
 		account := Account{
 			ID:          acct.AWSAccountID,
 			Environment: acct.Alias, // Use the alias as the environment value for compatibility with existing QuickSight dashboard
+			RoleARN:     roleARN,
 		}
 
 		accountsToTeams[account] = acct.Team
@@ -76,4 +119,26 @@ func hasAccount(accountsToTeamNames map[Account]string, accountID string) bool {
 		}
 	}
 	return false
+}
+
+// accountsToTeamNames returns a map of Accounts to team names
+func (t *Teams) accountsToTeamNames() (map[Account]string, error) {
+	var a = make(map[Account]string)
+	for _, team := range t.Teams {
+		for _, account := range team.Accounts {
+			if hasAccount(a, account.ID) {
+				return nil, &duplicateAccountIDError{
+					message: fmt.Sprintf("duplicate account ID: %s", account.ID),
+				}
+			}
+
+			if !arn.IsARN(account.RoleARN) {
+				return nil, &invalidRoleARNError{
+					message: fmt.Sprintf("invalid role ARN for account %s: %s Input must be a valid Role ARN", account.ID, account.RoleARN),
+				}
+			}
+			a[account] = team.Name
+		}
+	}
+	return a, nil
 }

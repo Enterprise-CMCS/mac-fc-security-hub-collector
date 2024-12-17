@@ -18,8 +18,6 @@ import (
 	"github.com/benbjohnson/clock"
 )
 
-const crossAccountRolePath = "delegatedadmin/developer/ct-cmcs-mac-fc-cost-usage-role"
-
 // HubCollector is a generic struct used to hold setting info
 type HubCollector struct {
 	outputFile *os.File
@@ -96,8 +94,7 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName string
 		MaxResults: 100,
 	}
 
-	roleARN := fmt.Sprintf("arn:aws:iam::%s:role/%s", account.ID, crossAccountRolePath)
-	securityHubClient, err := client.MakeSecurityHubClient(secHubRegion, roleARN)
+	securityHubClient, err := client.MakeSecurityHubClient(secHubRegion, account.RoleARN)
 	if err != nil {
 		return fmt.Errorf("could not make security hub client: %s", err)
 	}
