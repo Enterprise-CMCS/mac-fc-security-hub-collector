@@ -32,7 +32,7 @@ type Options struct {
 	Base64TeamMap       string   `short:"m" long:"team-map" required:"false" env:"BASE64_TEAM_MAP" description:"Base64 encoded JSON containing team to account mappings."`
 	TeamsTable          string   `short:"t" long:"teams-table" required:"false" env:"ATHENA_TEAMS_TABLE" description:"Athena table containing team to account mappings"`
 	QueryOutputLocation string   `long:"query-output" required:"false" env:"QUERY_OUTPUT_LOCATION" description:"S3 location for Athena query output"`
-	CollectorRoleARN    string   `long:"role-path" required:"false" env:"COLLECTOR_ROLE_ARN" description:"ARN of the AWS IAM role that allows the Collector to access Security Hub"`
+	CollectorRolePath   string   `long:"role-path" required:"false" env:"COLLECTOR_ROLE_PATH" description:"Path of the AWS IAM cross-account role that allows the Collector to access Security Hub"`
 }
 
 var options Options
@@ -98,8 +98,8 @@ func collectFindings(secHubRegions []string) error {
 	if options.Base64TeamMap != "" && options.TeamsTable != "" {
 		return fmt.Errorf("both team map file and Athena teams table specified; please use only one source of team map data")
 	}
-	if options.TeamsTable != "" && (options.CollectorRoleARN == "" || options.QueryOutputLocation == "") {
-		return fmt.Errorf("collector role ARN and query output location are required when using Athena teams table")
+	if options.TeamsTable != "" && (options.CollectorRolePath == "" || options.QueryOutputLocation == "") {
+		return fmt.Errorf("collector role path and query output location are required when using Athena teams table")
 	}
 
 	h := securityhubcollector.HubCollector{}
@@ -131,7 +131,7 @@ func collectFindings(secHubRegions []string) error {
 			log.Fatalf("could not parse team map file: %v", err)
 		}
 	} else {
-		accountsToTeams, err = teams.GetTeamsFromAthena(sess, options.TeamsTable, options.QueryOutputLocation, options.CollectorRoleARN)
+		accountsToTeams, err = teams.GetTeamsFromAthena(sess, options.TeamsTable, options.QueryOutputLocation, options.CollectorRolePath)
 		if err != nil {
 			log.Fatalf("could not load teams from Athena: %v", err)
 		}

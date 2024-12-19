@@ -78,7 +78,7 @@ func ParseTeamMap(base64Str string) (accountsToTeams map[Account]string, err err
 }
 
 // GetTeamsFromAthena loads a map of Accounts to team names from an Athena table
-func GetTeamsFromAthena(sess *session.Session, teamsTable, queryOutputLocation, roleARN string) (map[Account]string, error) {
+func GetTeamsFromAthena(sess *session.Session, teamsTable, queryOutputLocation, rolePath string) (map[Account]string, error) {
 	accounts, err := athenalib.LoadTeams(sess, teamsTable, queryOutputLocation)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load teams from Athena: %w", err)
@@ -107,7 +107,7 @@ func GetTeamsFromAthena(sess *session.Session, teamsTable, queryOutputLocation, 
 		account := Account{
 			ID:          acct.AWSAccountID,
 			Environment: acct.Alias, // Use the alias as the environment value for compatibility with existing QuickSight dashboard
-			RoleARN:     roleARN,
+			RoleARN:     fmt.Sprintf("arn:aws:iam::%s:role/%s", acct.AWSAccountID, rolePath),
 		}
 
 		accountsToTeams[account] = acct.Team
