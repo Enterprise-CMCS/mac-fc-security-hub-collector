@@ -155,7 +155,7 @@ resource "aws_ecs_cluster" "security_hub_collector_runner" {
 
 ########## Use the securityhub collector runner module ##########
 module "security_hub_collector_runner" {
-  source      = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=795330487905a32ae3bc9420c40abdd745fff327"
+  source                    = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=06fde49a2291cfc292774799bcb89c536e17e1e7"
   app_name                  = "security-hub"
   environment               = "dev"
   task_name                 = "scheduled-collector"
@@ -173,6 +173,6 @@ module "security_hub_collector_runner" {
   assign_public_ip          = var.assign_public_ip
   role_path                 = "/delegatedadmin/developer/"
   permissions_boundary      = "arn:aws:iam::037370603820:policy/cms-cloud-admin/developer-boundary-policy"
-  team_map                  = base64encode(file("${path.module}/team_map.json"))
+  team_config               = { athena : { teams_table : "athenacurcfn_cms_cloud_cur_monthly.teams", collector_role_arn : "arn:aws:iam::037370603820:role/delegatedadmin/developer/security-hub-collector", query_output_location : "s3://cms-macbis-cost-analysis/professor-mac/teams-query/" } }
   scheduled_task_state      = "ENABLED" #Set to DISABLED to stop scheduled execution
 }

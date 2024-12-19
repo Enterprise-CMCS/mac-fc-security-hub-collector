@@ -1,10 +1,11 @@
 package teams
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis/pkg/athenalib"
 	"github.com/aws/aws-sdk-go/aws/arn"
@@ -55,13 +56,17 @@ type Account struct {
 }
 
 // ParseTeamMap takes a JSON encoded string and returns a Go map of Accounts to team names
-func ParseTeamMap(jsonStr string) (accountsToTeams map[Account]string, err error) {
+func ParseTeamMap(base64Str string) (accountsToTeams map[Account]string, err error) {
 	var teams Teams
-	decoder := json.NewDecoder(strings.NewReader(jsonStr))
+	b, err := base64.URLEncoding.DecodeString(base64Str)
+	if err != nil {
+		return nil, fmt.Errorf("error base64 decoding team map: %s", err)
+	}
+	decoder := json.NewDecoder(bytes.NewReader(b))
 	decoder.DisallowUnknownFields()
 	err = decoder.Decode(&teams)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding team map: %s", err)
+		return nil, fmt.Errorf("error JSON decoding team map: %s", err)
 	}
 
 	accountsToTeams, err = teams.accountsToTeamNames()

@@ -28,8 +28,8 @@ To run the Docker image locally for testing, do the following:
    [url "https://<username>:<personal access token>@github.com/Enterprise-CMCS/"]
 	  insteadOf = https://github.com/Enterprise-CMCS/
    ```
-2. set AWS creds in the environment (`AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID, AWS_SESSION_TOKEN`)
-3. `docker build . -t local-collector-test`
+2. `docker build . -t local-collector-test`
+3. set AWS creds in the environment (`AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID, AWS_SESSION_TOKEN`)
 4. run the image:
    - using an Athena table
    ```bash
@@ -39,17 +39,17 @@ To run the Docker image locally for testing, do the following:
    -e QUERY_OUTPUT_LOCATION=s3://cms-macbis-cost-analysis/professor-mac/teams-query/ \
    -e COLLECTOR_ROLE_ARN=arn:aws:iam::037370603820:role/delegatedadmin/developer/security-hub-collector \
    -e AWS_REGION=us-east-1 \
-   -e S3_BUCKET=bharvey-test-distro \
+   -e S3_BUCKET=my-bucket \
    local-collector-test
    ```
    - using a team map
    ```bash
-   export TEAM_MAP=$(cat ./terraform/collector/team_map.json)
+   export BASE64_TEAM_MAP=$(cat team_map.json | base64)
    docker run \
    -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID \
-   -e TEAM_MAP \
+   -e BASE64_TEAM_MAP \
    -e AWS_REGION=us-east-1 \
-   -e S3_BUCKET=bharvey-test-distro \
+   -e S3_BUCKET=my-bucket \
    local-collector-test
    ```
 
