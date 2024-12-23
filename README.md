@@ -2,7 +2,8 @@
 
 ## Description
 
-This tool pulls findings from AWS Security Hub and outputs them for consumption by visualization tools. To use this tool, you need
+This tool pulls findings from AWS Security Hub and outputs them for consumption by visualization tools. To use this tool, you need:
+
 - an Athena table of teams to accounts that follows the [format expected by the Athena library](https://github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis/blob/250739e71c9617344a584aab82d5785334c37bba/pkg/athenalib)
 - an S3 bucket for Athena query outputs
 - a role that is valid for each account listed in the map of accounts to teams provided to the tool
@@ -24,14 +25,17 @@ To display a full list of CLI options, build the application and run `security-h
 To run the Docker image locally for testing, do the following:
 
 1. Create a file at the top level called `docker-gitconfig` with the following content:
-   ```
+
+   ```bash
    [url "https://<username>:<personal access token>@github.com/Enterprise-CMCS/"]
-	  insteadOf = https://github.com/Enterprise-CMCS/
+     insteadOf = https://github.com/Enterprise-CMCS/
    ```
+
 2. `docker build . -t local-collector-test`
 3. set AWS creds in the environment (`AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID, AWS_SESSION_TOKEN`)
 4. run the image:
    - using an Athena table
+
    ```bash
    docker run \
    -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID \
@@ -42,7 +46,9 @@ To run the Docker image locally for testing, do the following:
    -e S3_BUCKET=my-bucket \
    local-collector-test
    ```
+
    - using a team map
+
    ```bash
    export BASE64_TEAM_MAP=$(cat team_map.json | base64)
    docker run \
