@@ -155,7 +155,7 @@ resource "aws_ecs_cluster" "security_hub_collector_runner" {
 
 ########## Use the securityhub collector runner module ##########
 module "security_hub_collector_runner" {
-  source                    = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=8608d3fe22ad89fb7995b8e88812e8e54649ebfc"
+  source                    = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=b2ec585a8e1bb3a7ca336467bd28327c142394b8"
   app_name                  = "security-hub"
   environment               = "dev"
   task_name                 = "scheduled-collector"
