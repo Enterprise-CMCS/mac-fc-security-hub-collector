@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - bharvey-updates # TODO remove
 
 jobs:
   build:
