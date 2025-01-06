@@ -1,6 +1,8 @@
 name: validate
 on:
   pull_request:
+  push:
+    branches: [bharvey-ci]
 
 
 jobs:
