@@ -1,6 +1,5 @@
 linters-settings:
-  govet:
-    check-shadowing: true
+  govet: {}
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
     # it's a comma-separated list of prefixes
@@ -8,18 +7,15 @@ linters-settings:
 
 linters:
   enable:
-    - deadcode
     - errcheck
     - gofmt
     - goimports
-    - golint
+    - revive
     - gosec
     - govet
     - ineffassign
     - staticcheck
-    - structcheck
     - typecheck
-    - varcheck
   disable:
     - gosimple #deprecated https://github.com/golangci/golangci-lint/issues/357
     - unused #deprecated https://github.com/dominikh/go-tools/tree/master/cmd/unused
