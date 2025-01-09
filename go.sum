@@ -1,15 +1,3 @@
-github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241210174944-08f7ace3b394 h1:7+V3UVh5eP8pl1sjlnJ4sCPRzDYRfEG/8PlGJ1oKIJo=
-github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241210174944-08f7ace3b394/go.mod h1:Rpl2uKTJ4DPque6FoIbz2t25VBTw0nk8Wt+VvKff7y4=
-github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213211216-1c035cd315d1 h1:if4DVNniU4MvWLKazRwl8+neyBg8SbQ3Ik6l2uVfSSM=
-github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213211216-1c035cd315d1/go.mod h1:Rpl2uKTJ4DPque6FoIbz2t25VBTw0nk8Wt+VvKff7y4=
-github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213212546-6a3b33ed6c1e h1:B1hOpuM64h2YAWfh6/7LB7xjtSr7Nv3EYygKPdmlUNQ=
-github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213212546-6a3b33ed6c1e/go.mod h1:Rpl2uKTJ4DPque6FoIbz2t25VBTw0nk8Wt+VvKff7y4=
-github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213213814-a30d31ed5596 h1:NWZNESw1to9/vnPmQaZOyBlOHu3BrNIX8Zdznl56E/8=
-github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213213814-a30d31ed5596/go.mod h1:Rpl2uKTJ4DPque6FoIbz2t25VBTw0nk8Wt+VvKff7y4=
-github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213215421-c27f9f860567 h1:jhtLGVNB2/meGIeV2x4x47NuBkgILyffkOjTewWQquw=
-github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213215421-c27f9f860567/go.mod h1:Rpl2uKTJ4DPque6FoIbz2t25VBTw0nk8Wt+VvKff7y4=
-github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213221117-999a6627efd1 h1:z2mTAmD5djAZIiHPVW5MeQC5khY3osKaYe5oloRyTu4=
-github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241213221117-999a6627efd1/go.mod h1:Rpl2uKTJ4DPque6FoIbz2t25VBTw0nk8Wt+VvKff7y4=
 github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241216204327-1ff4359b0f87 h1:A0GYwRu/Zun21lq8fQleq7Wdmpr7WKyrPfPqZyWfSOs=
 github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241216204327-1ff4359b0f87/go.mod h1:Rpl2uKTJ4DPque6FoIbz2t25VBTw0nk8Wt+VvKff7y4=
 github.com/aws/aws-sdk-go v1.54.17 h1:ZV/qwcCIhMHgsJ6iXXPVYI0s1MdLT+5LW28ClzCUPeI=
