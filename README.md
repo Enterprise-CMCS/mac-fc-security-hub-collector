@@ -5,11 +5,13 @@
 This tool pulls findings from AWS Security Hub and outputs them for consumption by visualization tools. To use this tool, you need one of the following, depending on whether you provide team data via Athena or a JSON file:
 
 To configure with an Athena table:
-   - an Athena table of teams to accounts that follows the [format expected by the Athena library](https://github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis/blob/250739e71c9617344a584aab82d5785334c37bba/pkg/athenalib)
-   - an S3 bucket for Athena query outputs
-   - a single IAM role that is valid for all of the accounts in the Athena table
+
+- an Athena table of teams to accounts that follows the [format expected by the Athena library](https://github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis/blob/250739e71c9617344a584aab82d5785334c37bba/pkg/athenalib)
+- an S3 bucket for Athena query outputs
+- a single IAM role that is valid for all of the accounts in the Athena table
 
 To configure with a JSON team map:
+
 - one or more IAM roles that are valid for each account listed in the map of accounts to teams provided to the tool
 
 ## Installation
