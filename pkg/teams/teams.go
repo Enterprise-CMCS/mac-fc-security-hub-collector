@@ -55,7 +55,7 @@ type Account struct {
 	RoleARN     string
 }
 
-// ParseTeamMap takes a JSON encoded string and returns a Go map of Accounts to team names
+// ParseTeamMap takes a base64 encoded team map string and returns a Go map of Accounts to team names
 func ParseTeamMap(base64Str string) (accountsToTeams map[Account]string, err error) {
 	var teams Teams
 	b, err := base64.URLEncoding.DecodeString(base64Str)
