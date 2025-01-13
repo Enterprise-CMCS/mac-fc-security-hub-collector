@@ -1,15 +1,24 @@
 package teams
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
+	"slices"
 
+	"github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis/pkg/athenalib"
 	"github.com/aws/aws-sdk-go/aws/arn"
-
-	"github.com/CMSGov/security-hub-collector/pkg/helpers"
+	"github.com/aws/aws-sdk-go/aws/session"
 )
+
+// SEATool accounts are in the Athena team data (because we get CUR data from them)
+// but not in the MACBIS OU, so our cloud rule doesn't push the cross account role to them
+var seaToolAccountIDs = []string{
+	"360433083926",
+	"204488982178",
+	"635526538414",
+}
 
 type duplicateAccountIDError struct {
 	message string
@@ -40,18 +49,24 @@ type Team struct {
 	Accounts []Account `json:"accounts"`
 }
 
-// Account is a struct describing a single account for a team
 type Account struct {
-	ID          string `json:"id"`
-	Environment string `json:"environment"`
-	RoleARN     string `json:"roleArn"`
+	ID          string
+	Environment string
+	RoleARN     string
 }
 
-// ParseTeamMap takes a path to a team mapping JSON file, reads the file, and returns a Go map of Accounts to team names
-func ParseTeamMap(path string) (accountsToTeams map[Account]string, err error) {
-	teams, err := readTeamMap(path)
+// ParseTeamMap takes a base64 encoded team map string and returns a Go map of Accounts to team names
+func ParseTeamMap(base64Str string) (accountsToTeams map[Account]string, err error) {
+	var teams Teams
+	b, err := base64.URLEncoding.DecodeString(base64Str)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing team map: %s", err)
+		return nil, fmt.Errorf("error base64 decoding team map: %s", err)
+	}
+	decoder := json.NewDecoder(bytes.NewReader(b))
+	decoder.DisallowUnknownFields()
+	err = decoder.Decode(&teams)
+	if err != nil {
+		return nil, fmt.Errorf("error JSON decoding team map: %s", err)
 	}
 
 	accountsToTeams, err = teams.accountsToTeamNames()
@@ -62,34 +77,43 @@ func ParseTeamMap(path string) (accountsToTeams map[Account]string, err error) {
 	return accountsToTeams, nil
 }
 
-// readTeamMap - takes the JSON encoded file that maps teams to accounts
-// and converts it into a Teams object that we can use later.
-func readTeamMap(filePath string) (teams Teams, err error) {
-	jsonFile := filepath.Clean(filePath)
-
-	// gosec complains here because we're essentially letting you open
-	// any file you want, which if this was a webapp would be pretty
-	// sketchy. However, since this is a CLI tool, and you shouldn't be
-	// able to open a file you don't have permission for anyway, we can
-	// safely ignore its complaints here.
-	// #nosec
-	f, err := os.Open(jsonFile)
+// GetTeamsFromAthena loads a map of Accounts to team names from an Athena table
+func GetTeamsFromAthena(sess *session.Session, teamsTable, queryOutputLocation, rolePath string) (map[Account]string, error) {
+	accounts, err := athenalib.LoadTeams(sess, teamsTable, queryOutputLocation)
 	if err != nil {
-		return
+		return nil, fmt.Errorf("failed to load teams from Athena: %w", err)
 	}
 
-	defer func() {
-		cerr := f.Close()
-		if cerr != nil {
-			err = helpers.CombineErrors(err, cerr)
+	accountsToTeams := make(map[Account]string)
+
+	for _, acct := range accounts {
+		// skip inactive accounts
+		if acct.IsInactive {
+			continue
 		}
-	}()
 
-	decoder := json.NewDecoder(f)
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&teams)
+		// skip SEATool accounts
+		if slices.Contains(seaToolAccountIDs, acct.AWSAccountID) {
+			continue
+		}
 
-	return
+		// check for duplicate account IDs
+		if hasAccount(accountsToTeams, acct.AWSAccountID) {
+			return nil, &duplicateAccountIDError{
+				message: fmt.Sprintf("duplicate account ID in Athena team data: %s", acct.AWSAccountID),
+			}
+		}
+
+		account := Account{
+			ID:          acct.AWSAccountID,
+			Environment: acct.Alias, // Use the alias as the environment value for compatibility with existing QuickSight dashboard
+			RoleARN:     fmt.Sprintf("arn:aws:iam::%s:role/%s", acct.AWSAccountID, rolePath),
+		}
+
+		accountsToTeams[account] = acct.Team
+	}
+
+	return accountsToTeams, nil
 }
 
 // hasAccount checks if the given account ID is in the map of Accounts to team names

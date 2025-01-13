@@ -13,7 +13,31 @@ jobs:
     - name: setup go
       uses: actions/setup-go@v2
       with:
-        go-version: 1.22
+        go-version: 1.21.0
+
+    - name: Generate token from GitHub App
+      id: create_token
+      uses: tibdex/github-app-token@v2.1.0
+      with:
+        app_id: ${{ secrets.APP_ID }}
+        private_key: ${{ secrets.APP_PEM }}
+
+    - name: Configure git for private modules
+      env:
+        TOKEN: ${{ steps.create_token.outputs.token }}
+        GOPRIVATE: github.com/Enterprise-CMCS
+      run: |
+        git config --global url."https://cmcs-github-svc-user:${TOKEN}@github.com/Enterprise-CMCS/".insteadOf "https://github.com/Enterprise-CMCS/"
+
+    - name: Go modules cache
+      uses: actions/cache@v4.2.0
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/golangci-lint
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
 
     - name: setup python
       uses: actions/setup-python@v5.3.0
@@ -33,6 +57,15 @@ jobs:
 
     - name: run go tests
       run: go test -v ./pkg/...
+
+    - name: Configure git for private modules in Dockerfile
+      env:
+        TOKEN: ${{ steps.create_token.outputs.token }}
+      run: |
+        cat > ./docker-gitconfig <<EOF
+        [url "https://github-action:${TOKEN}@github.com/Enterprise-CMCS/"]
+          insteadOf = https://github.com/Enterprise-CMCS/
+        EOF
 
     - name: build the Docker image
       run: docker build . --file Dockerfile

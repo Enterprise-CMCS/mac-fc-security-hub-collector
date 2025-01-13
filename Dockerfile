@@ -1,4 +1,5 @@
 FROM golang:1.21 as build
+COPY ./docker-gitconfig /root/.gitconfig
 WORKDIR /build
 COPY . .
 RUN CGO_ENABLED=0 GOBIN=/bin/ go install .

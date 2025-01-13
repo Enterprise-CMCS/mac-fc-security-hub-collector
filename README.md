@@ -2,7 +2,17 @@
 
 ## Description
 
-This tool pulls findings from AWS Security Hub and outputs them for consumption by visualization tools. To use this tool, you need a role ARN that is valid for each account listed in the team map provided to the tool.
+This tool pulls findings from AWS Security Hub and outputs them for consumption by visualization tools. To use this tool, you need one of the following, depending on whether you provide team data via Athena or a JSON file:
+
+To configure with an Athena table:
+
+- an Athena table of teams to accounts that follows the [format expected by the Athena library](https://github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis/blob/250739e71c9617344a584aab82d5785334c37bba/pkg/athenalib)
+- an S3 bucket for Athena query outputs
+- a single IAM role that is valid for all of the accounts in the Athena table
+
+To configure with a JSON team map:
+
+- one or more IAM roles that are valid for each account listed in the map of accounts to teams provided to the tool
 
 ## Installation
 
@@ -16,41 +26,44 @@ go get -u github.com/Enterprise-CMCS/mac-fc-security-hub-collector
 
 To display a full list of CLI options, build the application and run `security-hub-collector -h`.
 
-
-You will need to create a team map file with a JSON object that describes
-your teams based on account numbers, environments and role ARN which will be used to query the account. For example:
-
-```json
-{
-  "teams": [
-    {
-      "accounts": [
-        { "id": "000000000011", "environment": "dev", "roleArn": "arn:aws:iam::000000000011:role/CustomRole" },
-        { "id": "000000000012", "environment": "test", "roleArn": "arn:aws:iam::000000000012:role/delegatedadmin/developer/AnotherCustomRole" }
-      ],
-      "name":"My Team"
-    }
-  ]
-}
-```
-
 ## Run Docker Image Locally
 
 To run the Docker image locally for testing, do the following:
 
-1. create a local `team_map.json` file based on the example above
-2. `export TEAM_MAP=$(cat team_map.json | base64)`
-3. set AWS creds in the environment (`AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID, AWS_SESSION_TOKEN`)
-4. `docker build . -t local-collector-test`
-5. run the image:
+1. Create a file at the top level called `docker-gitconfig` with the following content:
 
-```bash
-docker run \
--e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID -e TEAM_MAP \
--e AWS_REGION={region}
--e S3_BUCKET_PATH={bucket name} \
-local-collector-test
-```
+   ```bash
+   [url "https://<username>:<personal access token>@github.com/Enterprise-CMCS/"]
+     insteadOf = https://github.com/Enterprise-CMCS/
+   ```
+
+2. `docker build . -t local-collector-test`
+3. set AWS creds in the environment (`AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID, AWS_SESSION_TOKEN`)
+4. run the image:
+   - using an Athena table
+
+   ```bash
+   docker run \
+   -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID \
+   -e ATHENA_TEAMS_TABLE=athenacurcfn_cms_cloud_cur_monthly.teams \
+   -e QUERY_OUTPUT_LOCATION=s3://cms-macbis-cost-analysis/professor-mac/teams-query/ \
+   -e COLLECTOR_ROLE_PATH=delegatedadmin/developer/security-hub-collector \
+   -e AWS_REGION=us-east-1 \
+   -e S3_BUCKET=my-bucket \
+   local-collector-test
+   ```
+
+   - using a team map
+
+   ```bash
+   export BASE64_TEAM_MAP=$(cat team_map.json | base64)
+   docker run \
+   -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID \
+   -e BASE64_TEAM_MAP \
+   -e AWS_REGION=us-east-1 \
+   -e S3_BUCKET=my-bucket \
+   local-collector-test
+   ```
 
 ## Terraform
 
@@ -63,7 +76,7 @@ The repo contains Terraform for:
 
 ### build-and-push
 
-This workflow builds and pushes the Collector image to a private ECR registry in MACBIS Shared DSO dev. It tags the image with the SHA and the value `v2`, to signify a breaking change in the team map schema from the previous release tag, `latest`. We have deprecated the `latest` tag, but the image with this tag should not be removed from the repo because it is in use.
+This workflow builds and pushes the Collector image to a private ECR registry in MACBIS Shared DSO dev. It tags the image with the SHA. We have deprecated the `latest` tag, but the image with this tag should not be removed from the ECR registry because it is in use.
 
 ### validate
 

@@ -10,9 +10,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/securityhub/types"
 
 	"github.com/CMSGov/security-hub-collector/internal/aws/client"
+	"github.com/CMSGov/security-hub-collector/pkg/teams"
 
 	"encoding/csv"
 	"os"
+
+	"github.com/benbjohnson/clock"
 )
 
 // HubCollector is a generic struct used to hold setting info
@@ -71,7 +74,7 @@ func (h *HubCollector) FlushAndClose() error {
 }
 
 // GetFindingsAndWriteToOutput - gets all security hub findings from a single AWS account and writes them to the output file
-func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName, environment, roleArn string) error {
+func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName string, account teams.Account) error {
 	// We want all the security findings that are active and not resolved.
 	params := &securityhub.GetFindingsInput{
 		Filters: &types.AwsSecurityFindingFilters{
@@ -91,7 +94,7 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName, envir
 		MaxResults: 100,
 	}
 
-	securityHubClient, err := client.MakeSecurityHubClient(secHubRegion, roleArn)
+	securityHubClient, err := client.MakeSecurityHubClient(secHubRegion, account.RoleARN)
 	if err != nil {
 		return fmt.Errorf("could not make security hub client: %s", err)
 	}
@@ -102,7 +105,7 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName, envir
 		if err != nil {
 			return fmt.Errorf("could not get next page of findings: %s", err)
 		}
-		err = h.writeFindingsToOutput(page.Findings, teamName, environment)
+		err = h.writeFindingsToOutput(page.Findings, teamName, account.Environment)
 		if err != nil {
 			return fmt.Errorf("could not write findings to output: %s", err)
 		}
@@ -113,7 +116,7 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName, envir
 
 // convertFindingToRows - converts a single finding to the record format we're using
 // the order of the records must match with the order of the headers in writeHeadersToOutput
-func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, teamName, environment string) [][]string {
+func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, teamName, environment string, clock clock.Clock) [][]string {
 	var output [][]string
 
 	// Each finding may have multiple resources, so we need to iterate through
@@ -177,6 +180,8 @@ func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, te
 		record = append(record, *finding.UpdatedAt)
 		record = append(record, region)
 		record = append(record, environment)
+		record = append(record, *finding.ProductName)
+		record = append(record, clock.Now().Format("01-02-2006"))
 
 		// Each record *may* have multiple findings, so we make a list of
 		// records and that's what we'll output.
@@ -196,7 +201,7 @@ func (h *HubCollector) writeHeadersToOutput() error {
 	// out the data we wanted from these findings changed regularly, we
 	// could make the headers/fields come from some sort of schema or struct,
 	// but for now this is good enough.
-	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State", "Workflow Status", "Created At", "Updated At", "Region", "Environment"}
+	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State", "Workflow Status", "Created At", "Updated At", "Region", "Environment", "Product", "Date Collected"}
 
 	err := h.csvWriter.Write(headers)
 	if err != nil {
@@ -213,7 +218,8 @@ func (h *HubCollector) writeFindingsToOutput(findings []types.AwsSecurityFinding
 	}
 
 	for _, finding := range findings {
-		records := h.convertFindingToRows(finding, teamName, environment)
+		clock := clock.New()
+		records := h.convertFindingToRows(finding, teamName, environment, clock)
 		for _, record := range records {
 			err := h.csvWriter.Write(record)
 			if err != nil {

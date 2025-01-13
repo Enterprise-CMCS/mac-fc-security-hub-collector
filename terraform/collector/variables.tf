@@ -18,16 +18,6 @@ variable "schedule_task_expression" {
   type        = string
 }
 
-variable "output_path" {
-  description = "The path where output files will be saved"
-  type        = string
-}
-
-variable "s3_key" {
-  description = "The S3 key (path) where files will be stored in the S3 bucket"
-  type        = string
-}
-
 variable "aws_cloudwatch_log_group_name" {
   description = "The name of the CloudWatch log group where ECS task logs will be sent"
   type        = string

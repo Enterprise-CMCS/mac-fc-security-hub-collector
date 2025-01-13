@@ -1,5 +1,5 @@
 bin/
 dist/
-manual_test_team_map.json
+docker-gitconfig
 .terraform
 *.tfstate.backup

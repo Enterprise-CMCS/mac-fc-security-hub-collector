@@ -155,7 +155,7 @@ resource "aws_ecs_cluster" "security_hub_collector_runner" {
 
 ########## Use the securityhub collector runner module ##########
 module "security_hub_collector_runner" {
-  source      = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=795330487905a32ae3bc9420c40abdd745fff327"
+  source                    = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=b2ec585a8e1bb3a7ca336467bd28327c142394b8"
   app_name                  = "security-hub"
   environment               = "dev"
   task_name                 = "scheduled-collector"
@@ -167,12 +167,10 @@ module "security_hub_collector_runner" {
   schedule_task_expression  = var.schedule_task_expression
   logs_cloudwatch_group_arn = aws_cloudwatch_log_group.aws-scanner-inspec.arn
   ecs_cluster_arn           = aws_ecs_cluster.security_hub_collector_runner.arn
-  output_path               = var.output_path //optional
   s3_results_bucket         = var.security_hub_collector_results_bucket_name
-  s3_key                    = var.s3_key //optional
   assign_public_ip          = var.assign_public_ip
   role_path                 = "/delegatedadmin/developer/"
   permissions_boundary      = "arn:aws:iam::037370603820:policy/cms-cloud-admin/developer-boundary-policy"
-  team_map                  = base64encode(file("${path.module}/team_map.json"))
+  team_config               = { athena : { teams_table : "athenacurcfn_cms_cloud_cur_monthly.teams", collector_role_path : "delegatedadmin/developer/ct-cmcs-mac-fc-cost-usage-role", query_output_location : "s3://cms-macbis-cost-analysis/professor-mac/teams-query" } }
   scheduled_task_state      = "ENABLED" #Set to DISABLED to stop scheduled execution
 }

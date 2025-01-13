@@ -31,6 +31,22 @@ jobs:
       - name: Create env var for ECR URI
         run: echo "ECR_URI=${{ steps.login-ecr.outputs.registry }}/security-hub-collector" >> $GITHUB_ENV
 
+      - name: Generate token from GitHub App
+        id: create_token
+        uses: tibdex/github-app-token@v2.1.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PEM }}
+
+      - name: Configure git for private modules
+        env:
+          TOKEN: ${{ steps.create_token.outputs.token }}
+        run: |
+          cat > ./docker-gitconfig <<EOF
+          [url "https://github-action:${TOKEN}@github.com/Enterprise-CMCS/"]
+            insteadOf = https://github.com/Enterprise-CMCS/
+          EOF
+
       - name: Build the Docker image
         run: docker build . --file Dockerfile --tag $ECR_URI:$(git rev-parse --short $GITHUB_SHA)
 
