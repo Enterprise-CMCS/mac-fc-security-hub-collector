@@ -47,10 +47,10 @@ To run the Docker image locally for testing, do the following:
    -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID \
    -e ATHENA_TEAMS_TABLE=athenacurcfn_cms_cloud_cur_monthly.teams \
    -e QUERY_OUTPUT_LOCATION=s3://cms-macbis-cost-analysis/professor-mac/teams-query/ \
-   -e COLLECTOR_ROLE_PATH=delegatedadmin/developer/ct-cmcs-mac-fc-cost-usage-role \
+   -e COLLECTOR_ROLE_PATH=delegatedadmin/developer/security-hub-collector \
    -e AWS_REGION=us-east-1 \
    -e S3_BUCKET=my-bucket \
-      local-collector-test
+   local-collector-test
    ```
 
    - using a team map

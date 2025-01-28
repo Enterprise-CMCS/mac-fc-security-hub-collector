@@ -1,8 +1,6 @@
 package securityhubcollector
 
 import (
-	"bytes"
-	"encoding/csv"
 	"log"
 	"testing"
 	"time"
@@ -289,73 +287,6 @@ func TestConvertFindingToRows(t *testing.T) {
 			actual := h.convertFindingToRows(tc.finding, tc.teamName, tc.environment, mockClock)
 			if diff := cmp.Diff(tc.expected, actual); diff != "" {
 				t.Fatalf("Expected rows did not match actual: %s", diff)
-			}
-		})
-	}
-}
-
-func TestSanitizedCSVWriter(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    []string
-		expected string
-	}{
-		{
-			name:     "simple line with no special characters",
-			input:    []string{"Team1", "Normal text", "More text"},
-			expected: "Team1,Normal text,More text\n",
-		},
-		{
-			name:     "windows line endings (CRLF)",
-			input:    []string{"Team1", "Line 1\r\nLine 2", "Field3"},
-			expected: "Team1,Line 1 Line 2,Field3\n",
-		},
-		{
-			name:     "unix line endings (LF)",
-			input:    []string{"Team1", "Line 1\nLine 2", "Field3"},
-			expected: "Team1,Line 1 Line 2,Field3\n",
-		},
-		{
-			name:     "old mac line endings (CR)",
-			input:    []string{"Team1", "Line 1\rLine 2", "Field3"},
-			expected: "Team1,Line 1 Line 2,Field3\n",
-		},
-		{
-			name:     "mixed line endings",
-			input:    []string{"Team1", "Windows\r\nUnix\nMac\rStyle", "Field3"},
-			expected: "Team1,Windows Unix Mac Style,Field3\n",
-		},
-		{
-			name:     "multiple consecutive line endings",
-			input:    []string{"Team1", "Line1\n\n\nLine2", "Field3"},
-			expected: "Team1,Line1 Line2,Field3\n",
-		},
-		{
-			name: "real world security finding example",
-			input: []string{
-				"According to its its self-reported version number\n the version of Jenkins running on the remote web server is Jenkins LTS prior to 2.462.3 or Jenkins weekly prior to 2.479. It is\ntherefore\naffected by multiple vulnerabilities:",
-			},
-			expected: "According to its its self-reported version number the version of Jenkins running on the remote web server is Jenkins LTS prior to 2.462.3 or Jenkins weekly prior to 2.479. It is therefore affected by multiple vulnerabilities:\n",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var buf bytes.Buffer
-
-			baseWriter := csv.NewWriter(&buf)
-			writer := &sanitizedCSVWriter{baseWriter}
-
-			err := writer.Write(tt.input)
-			writer.Flush()
-
-			if err != nil {
-				t.Errorf("got unexpected error calling sanitizedCSVWriter.Write(): %v", err)
-				return
-			}
-			actual := buf.String()
-			if diff := cmp.Diff(tt.expected, actual); diff != "" {
-				t.Fatalf("Expected sanitizedCSVWriter.Write() output did not match actual: %s", diff)
 			}
 		})
 	}

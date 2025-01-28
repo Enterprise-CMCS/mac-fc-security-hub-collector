@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/securityhub"
@@ -19,34 +18,10 @@ import (
 	"github.com/benbjohnson/clock"
 )
 
-// https://pkg.go.dev/encoding/csv#Writer
-type CSVWriter interface {
-	Write(record []string) error
-	Flush()
-	Error() error
-	WriteAll(records [][]string) error
-}
-
 // HubCollector is a generic struct used to hold setting info
 type HubCollector struct {
 	outputFile *os.File
-	csvWriter  CSVWriter
-}
-
-// sanitizedCSVWriter sanitizes newlines before writing
-type sanitizedCSVWriter struct {
-	*csv.Writer
-}
-
-// Write overrides the default Write method to sanitize newline characters before writing
-func (w *sanitizedCSVWriter) Write(record []string) error {
-	sanitized := make([]string, len(record))
-	for i, field := range record {
-		field = strings.ReplaceAll(field, "\r", " ")
-		field = strings.ReplaceAll(field, "\n", " ")
-		sanitized[i] = strings.Join(strings.Fields(field), " ")
-	}
-	return w.Writer.Write(sanitized)
+	csvWriter  *csv.Writer
 }
 
 // Initialize sets up the HubCollector object and writes the header row to the output file.
@@ -61,8 +36,7 @@ func (h *HubCollector) Initialize(outputFileName string) error {
 		return fmt.Errorf("could not create output file: %v", err)
 	}
 	h.outputFile = f
-	baseWriter := csv.NewWriter(h.outputFile)
-	h.csvWriter = &sanitizedCSVWriter{baseWriter}
+	h.csvWriter = csv.NewWriter(h.outputFile)
 
 	err = h.writeHeadersToOutput()
 	if err != nil {
