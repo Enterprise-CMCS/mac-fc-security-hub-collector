@@ -1,0 +1,15 @@
+{
+  "fileLocations": [
+    {
+      "URIPrefixes": [
+        "s3://securityhub-collector-results-037370603820s/"
+      ]
+    }
+  ],
+  "globalUploadSettings": {
+    "containsHeader": "true",
+    "delimiter": "\t",
+    "format": "CSV",
+    "textqualifier": "\""
+  }
+}
