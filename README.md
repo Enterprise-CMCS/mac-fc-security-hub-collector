@@ -47,9 +47,9 @@ To run the Docker image locally for testing, do the following:
    -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID \
    -e ATHENA_TEAMS_TABLE=athenacurcfn_cms_cloud_cur_monthly.teams \
    -e QUERY_OUTPUT_LOCATION=s3://cms-macbis-cost-analysis/professor-mac/teams-query/ \
-   -e COLLECTOR_ROLE_PATH=delegatedadmin/developer/security-hub-collector \
+   -e COLLECTOR_ROLE_PATH=delegatedadmin/developer/ct-cmcs-mac-fc-cost-usage-role \
    -e AWS_REGION=us-east-1 \
-   -e S3_BUCKET=my-bucket \
+   -e S3_BUCKET=securityhub-collector-results-037370603820s \
    local-collector-test
    ```
 
@@ -61,7 +61,7 @@ To run the Docker image locally for testing, do the following:
    -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID \
    -e BASE64_TEAM_MAP \
    -e AWS_REGION=us-east-1 \
-   -e S3_BUCKET=my-bucket \
+   -e S3_BUCKET=securityhub-collector-results-037370603820s \
    local-collector-test
    ```
 
@@ -82,4 +82,6 @@ This workflow builds and pushes the Collector image to a private ECR registry in
 
 This workflow runs pre-commit, Go tests, and a Docker build upon pull requests
 
+## QuickSight dataset
 
+QuickSight requires a [manifest file](https://docs.aws.amazon.com/quicksight/latest/user/supported-manifest-file-format.html) to ingest data from S3. Since there's a dependency between the CSV delimiter and the manifest file, `manifest.json` is included here. This file must be manually uploaded when a new dataset is created that uses the Collector data as a data source. We use tab delimiters because we were seeing some errors with unescaped commas in some fields.

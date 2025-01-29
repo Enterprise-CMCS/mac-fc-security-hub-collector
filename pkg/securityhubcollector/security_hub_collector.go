@@ -3,7 +3,9 @@ package securityhubcollector
 import (
 	"context"
 	"fmt"
+	"log"
 	"path/filepath"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/securityhub"
@@ -24,6 +26,23 @@ type HubCollector struct {
 	csvWriter  *csv.Writer
 }
 
+func standardizeTimestamp(timestamp string) string {
+	// this is the custom time format that includes outliers we've seen in Security Hub findings
+	//  - time zone
+	//  - microseconds
+	// we'll need to update this if we notice that Quicksight is skipping a lot of rows
+	// due to MALFORMED_DATE errors when it ingests the data
+
+	t, err := time.Parse("2006-01-02T15:04:05.999999Z07:00", timestamp)
+	if err != nil {
+		log.Printf("could not standardize the date string %s", timestamp)
+		return timestamp
+	}
+
+	// standardize to a Quicksight-friendly format
+	return t.UTC().Format("2006-01-02T15:04:05.000Z")
+}
+
 // Initialize sets up the HubCollector object and writes the header row to the output file.
 func (h *HubCollector) Initialize(outputFileName string) error {
 	if h.isInitialized() {
@@ -37,6 +56,9 @@ func (h *HubCollector) Initialize(outputFileName string) error {
 	}
 	h.outputFile = f
 	h.csvWriter = csv.NewWriter(h.outputFile)
+	// use tab delimiters since we were seeing some INCORRECT_FIELD_COUNT
+	// errors on QuickSight ingestion due to unescaped commas in some fields
+	h.csvWriter.Comma = '\t'
 
 	err = h.writeHeadersToOutput()
 	if err != nil {
@@ -176,8 +198,8 @@ func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, te
 		} else {
 			record = append(record, string(finding.Workflow.Status))
 		}
-		record = append(record, *finding.CreatedAt)
-		record = append(record, *finding.UpdatedAt)
+		record = append(record, standardizeTimestamp(*finding.CreatedAt))
+		record = append(record, standardizeTimestamp(*finding.UpdatedAt))
 		record = append(record, region)
 		record = append(record, environment)
 		record = append(record, *finding.ProductName)
