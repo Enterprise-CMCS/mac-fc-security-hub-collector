@@ -215,25 +215,26 @@ func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, te
 			region = *finding.Region
 		}
 
+		// Create record with all string fields sanitized
 		record := FindingRecord{
-			Team:          teamName,
-			ResourceType:  *r.Type,
-			Title:         *finding.Title,
+			Team:          sanitizeFieldForCSV(teamName),
+			ResourceType:  sanitizeFieldForCSV(*r.Type),
+			Title:         sanitizeFieldForCSV(*finding.Title),
 			Description:   sanitizeFieldForCSV(*finding.Description),
-			ResourceID:    *r.Id,
-			AWSAccountID:  *finding.AwsAccountId,
-			RecordState:   string(finding.RecordState),
-			CreatedAt:     standardizeTimestamp(*finding.CreatedAt),
-			UpdatedAt:     standardizeTimestamp(*finding.UpdatedAt),
-			Region:        region,
-			Environment:   environment,
-			Product:       *finding.ProductName,
-			DateCollected: clock.Now().Format("01-02-2006"),
+			ResourceID:    sanitizeFieldForCSV(*r.Id),
+			AWSAccountID:  sanitizeFieldForCSV(*finding.AwsAccountId),
+			RecordState:   sanitizeFieldForCSV(string(finding.RecordState)),
+			CreatedAt:     standardizeTimestamp(*finding.CreatedAt), // Timestamps don't need sanitization
+			UpdatedAt:     standardizeTimestamp(*finding.UpdatedAt), // Timestamps don't need sanitization
+			Region:        sanitizeFieldForCSV(region),
+			Environment:   sanitizeFieldForCSV(environment),
+			Product:       sanitizeFieldForCSV(*finding.ProductName),
+			DateCollected: clock.Now().Format("01-02-2006"), // Generated date format doesn't need sanitization
 		}
 
-		// Handle fields that might be nil
+		// Handle optional fields with nil checks
 		if finding.Severity != nil {
-			record.SeverityLabel = string(finding.Severity.Label)
+			record.SeverityLabel = sanitizeFieldForCSV(string(finding.Severity.Label))
 		}
 
 		if finding.Remediation != nil && finding.Remediation.Recommendation != nil {
@@ -241,16 +242,16 @@ func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, te
 				record.RemediationText = sanitizeFieldForCSV(*finding.Remediation.Recommendation.Text)
 			}
 			if finding.Remediation.Recommendation.Url != nil {
-				record.RemediationURL = *finding.Remediation.Recommendation.Url
+				record.RemediationURL = sanitizeFieldForCSV(*finding.Remediation.Recommendation.Url)
 			}
 		}
 
 		if finding.Compliance != nil {
-			record.ComplianceStatus = string(finding.Compliance.Status)
+			record.ComplianceStatus = sanitizeFieldForCSV(string(finding.Compliance.Status))
 		}
 
 		if finding.Workflow != nil {
-			record.WorkflowStatus = string(finding.Workflow.Status)
+			record.WorkflowStatus = sanitizeFieldForCSV(string(finding.Workflow.Status))
 		}
 
 		output = append(output, record.ToSlice())
