@@ -28,7 +28,7 @@ type HubCollector struct {
 	csvWriter  *csv.Writer
 }
 
-// call this on fields that have control characters that might break CSV parsing in QuickSight
+// convert all control characters that might break CSV parsing in QuickSight to spaces
 func sanitizeFieldForCSV(field string) string {
 	var builder strings.Builder
 	builder.Grow(len(field))
@@ -191,13 +191,14 @@ func (FindingRecord) GetHeaders() []string {
 	return headers
 }
 
-func (r FindingRecord) ToSlice() []string {
+func (r FindingRecord) ToSanitizedSlice() []string {
 	v := reflect.ValueOf(r)
 	slice := make([]string, v.NumField())
 
 	for i := 0; i < v.NumField(); i++ {
 		fieldValue := v.Field(i)
-		slice[i] = fieldValue.String()
+		// Since all fields in FindingRecord are strings, we can safely convert and sanitize
+		slice[i] = sanitizeFieldForCSV(fieldValue.String())
 	}
 
 	return slice
@@ -215,46 +216,45 @@ func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, te
 			region = *finding.Region
 		}
 
-		// Create record with all string fields sanitized
 		record := FindingRecord{
-			Team:          sanitizeFieldForCSV(teamName),
-			ResourceType:  sanitizeFieldForCSV(*r.Type),
-			Title:         sanitizeFieldForCSV(*finding.Title),
-			Description:   sanitizeFieldForCSV(*finding.Description),
-			ResourceID:    sanitizeFieldForCSV(*r.Id),
-			AWSAccountID:  sanitizeFieldForCSV(*finding.AwsAccountId),
-			RecordState:   sanitizeFieldForCSV(string(finding.RecordState)),
-			CreatedAt:     standardizeTimestamp(*finding.CreatedAt), // Timestamps don't need sanitization
-			UpdatedAt:     standardizeTimestamp(*finding.UpdatedAt), // Timestamps don't need sanitization
-			Region:        sanitizeFieldForCSV(region),
-			Environment:   sanitizeFieldForCSV(environment),
-			Product:       sanitizeFieldForCSV(*finding.ProductName),
-			DateCollected: clock.Now().Format("01-02-2006"), // Generated date format doesn't need sanitization
+			Team:          teamName,
+			ResourceType:  *r.Type,
+			Title:         *finding.Title,
+			Description:   *finding.Description,
+			ResourceID:    *r.Id,
+			AWSAccountID:  *finding.AwsAccountId,
+			RecordState:   string(finding.RecordState),
+			CreatedAt:     standardizeTimestamp(*finding.CreatedAt),
+			UpdatedAt:     standardizeTimestamp(*finding.UpdatedAt),
+			Region:        region,
+			Environment:   environment,
+			Product:       *finding.ProductName,
+			DateCollected: clock.Now().Format("01-02-2006"),
 		}
 
 		// Handle optional fields with nil checks
 		if finding.Severity != nil {
-			record.SeverityLabel = sanitizeFieldForCSV(string(finding.Severity.Label))
+			record.SeverityLabel = string(finding.Severity.Label)
 		}
 
 		if finding.Remediation != nil && finding.Remediation.Recommendation != nil {
 			if finding.Remediation.Recommendation.Text != nil {
-				record.RemediationText = sanitizeFieldForCSV(*finding.Remediation.Recommendation.Text)
+				record.RemediationText = *finding.Remediation.Recommendation.Text
 			}
 			if finding.Remediation.Recommendation.Url != nil {
-				record.RemediationURL = sanitizeFieldForCSV(*finding.Remediation.Recommendation.Url)
+				record.RemediationURL = *finding.Remediation.Recommendation.Url
 			}
 		}
 
 		if finding.Compliance != nil {
-			record.ComplianceStatus = sanitizeFieldForCSV(string(finding.Compliance.Status))
+			record.ComplianceStatus = string(finding.Compliance.Status)
 		}
 
 		if finding.Workflow != nil {
-			record.WorkflowStatus = sanitizeFieldForCSV(string(finding.Workflow.Status))
+			record.WorkflowStatus = string(finding.Workflow.Status)
 		}
 
-		output = append(output, record.ToSlice())
+		output = append(output, record.ToSanitizedSlice())
 	}
 
 	return output
