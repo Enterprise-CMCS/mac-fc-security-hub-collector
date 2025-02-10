@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -24,6 +26,20 @@ import (
 type HubCollector struct {
 	outputFile *os.File
 	csvWriter  *csv.Writer
+}
+
+// convert all control characters that might break CSV parsing in QuickSight to spaces
+func sanitizeFieldForCSV(field string) string {
+	var builder strings.Builder
+	builder.Grow(len(field))
+	for _, r := range field {
+		if r >= 32 && r <= 126 {
+			builder.WriteRune(r) // Keep printable ASCII
+		} else {
+			builder.WriteRune(' ') // Everything else becomes space
+		}
+	}
+	return strings.TrimSpace(builder.String())
 }
 
 func standardizeTimestamp(timestamp string) string {
@@ -136,78 +152,109 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName string
 	return nil
 }
 
+type FindingRecord struct {
+	Team             string `csv:"Team"`
+	ResourceType     string `csv:"Resource Type"`
+	Title            string `csv:"Title"`
+	Description      string `csv:"Description"`
+	SeverityLabel    string `csv:"Severity Label"`
+	RemediationText  string `csv:"Remediation Text"`
+	RemediationURL   string `csv:"Remediation URL"`
+	ResourceID       string `csv:"Resource ID"`
+	AWSAccountID     string `csv:"AWS Account ID"`
+	ComplianceStatus string `csv:"Compliance Status"`
+	RecordState      string `csv:"Record State"`
+	WorkflowStatus   string `csv:"Workflow Status"`
+	CreatedAt        string `csv:"Created At"`
+	UpdatedAt        string `csv:"Updated At"`
+	Region           string `csv:"Region"`
+	Environment      string `csv:"Environment"`
+	Product          string `csv:"Product"`
+	DateCollected    string `csv:"Date Collected"`
+}
+
+// GetHeaders returns a slice of header names from the CSV tags of the struct fields.
+// If a field doesn't have a CSV tag, it falls back to using the field name.
+func (FindingRecord) GetHeaders() []string {
+	t := reflect.TypeOf(FindingRecord{})
+	headers := make([]string, t.NumField())
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if csvHeader := field.Tag.Get("csv"); csvHeader != "" {
+			headers[i] = csvHeader
+		} else {
+			headers[i] = field.Name
+		}
+	}
+
+	return headers
+}
+
+func (r FindingRecord) ToSanitizedSlice() []string {
+	v := reflect.ValueOf(r)
+	slice := make([]string, v.NumField())
+
+	for i := 0; i < v.NumField(); i++ {
+		fieldValue := v.Field(i)
+		// Since all fields in FindingRecord are strings, we can safely convert and sanitize
+		slice[i] = sanitizeFieldForCSV(fieldValue.String())
+	}
+
+	return slice
+}
+
 // convertFindingToRows - converts a single finding to the record format we're using
-// the order of the records must match with the order of the headers in writeHeadersToOutput
 func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, teamName, environment string, clock clock.Clock) [][]string {
 	var output [][]string
 
-	// Each finding may have multiple resources, so we need to iterate through
-	// them and pull the relevant bits; we will create two lines for a single
-	// finding that has two resources, with only the resource different.
 	for _, r := range finding.Resources {
-		// Here we compile a single record, which is a representation of
-		// the row we want to output into the CSV for this resource in
-		// the finding.
-
-		// If the resource for a finding has a non-nil region, prefer that. Otherwise use the finding region.  If both are nil, use an empty string.
-		var region string
+		region := ""
 		if r.Region != nil {
 			region = *r.Region
 		} else if finding.Region != nil {
 			region = *finding.Region
 		}
 
-		var record []string
-		record = append(record, teamName)
-		record = append(record, *r.Type)
-		record = append(record, *finding.Title)
-		record = append(record, *finding.Description)
-		if finding.Severity == nil {
-			record = append(record, "")
-		} else {
-			record = append(record, string(finding.Severity.Label))
+		record := FindingRecord{
+			Team:          teamName,
+			ResourceType:  *r.Type,
+			Title:         *finding.Title,
+			Description:   *finding.Description,
+			ResourceID:    *r.Id,
+			AWSAccountID:  *finding.AwsAccountId,
+			RecordState:   string(finding.RecordState),
+			CreatedAt:     standardizeTimestamp(*finding.CreatedAt),
+			UpdatedAt:     standardizeTimestamp(*finding.UpdatedAt),
+			Region:        region,
+			Environment:   environment,
+			Product:       *finding.ProductName,
+			DateCollected: clock.Now().Format("01-02-2006"),
 		}
-		if finding.Remediation == nil {
-			record = append(record, "", "")
-		} else {
-			if finding.Remediation.Recommendation == nil {
-				record = append(record, "", "")
-			} else {
-				if finding.Remediation.Recommendation.Text == nil {
-					record = append(record, "")
-				} else {
-					record = append(record, *finding.Remediation.Recommendation.Text)
-				}
-				if finding.Remediation.Recommendation.Url == nil {
-					record = append(record, "")
-				} else {
-					record = append(record, *finding.Remediation.Recommendation.Url)
-				}
+
+		// Handle optional fields with nil checks
+		if finding.Severity != nil {
+			record.SeverityLabel = string(finding.Severity.Label)
+		}
+
+		if finding.Remediation != nil && finding.Remediation.Recommendation != nil {
+			if finding.Remediation.Recommendation.Text != nil {
+				record.RemediationText = *finding.Remediation.Recommendation.Text
+			}
+			if finding.Remediation.Recommendation.Url != nil {
+				record.RemediationURL = *finding.Remediation.Recommendation.Url
 			}
 		}
-		record = append(record, *r.Id)
-		record = append(record, *finding.AwsAccountId)
-		if finding.Compliance == nil {
-			record = append(record, "")
-		} else {
-			record = append(record, string(finding.Compliance.Status))
-		}
-		record = append(record, string(finding.RecordState))
-		if finding.Workflow == nil {
-			record = append(record, "")
-		} else {
-			record = append(record, string(finding.Workflow.Status))
-		}
-		record = append(record, standardizeTimestamp(*finding.CreatedAt))
-		record = append(record, standardizeTimestamp(*finding.UpdatedAt))
-		record = append(record, region)
-		record = append(record, environment)
-		record = append(record, *finding.ProductName)
-		record = append(record, clock.Now().Format("01-02-2006"))
 
-		// Each record *may* have multiple findings, so we make a list of
-		// records and that's what we'll output.
-		output = append(output, record)
+		if finding.Compliance != nil {
+			record.ComplianceStatus = string(finding.Compliance.Status)
+		}
+
+		if finding.Workflow != nil {
+			record.WorkflowStatus = string(finding.Workflow.Status)
+		}
+
+		output = append(output, record.ToSanitizedSlice())
 	}
 
 	return output
@@ -218,19 +265,7 @@ func (h *HubCollector) writeHeadersToOutput() error {
 	if !h.isInitialized() {
 		return fmt.Errorf("HubCollector is not initialized")
 	}
-
-	// For now, we're hardcoding the headers; in the future, if it turned
-	// out the data we wanted from these findings changed regularly, we
-	// could make the headers/fields come from some sort of schema or struct,
-	// but for now this is good enough.
-	headers := []string{"Team", "Resource Type", "Title", "Description", "Severity Label", "Remediation Text", "Remediation URL", "Resource ID", "AWS Account ID", "Compliance Status", "Record State", "Workflow Status", "Created At", "Updated At", "Region", "Environment", "Product", "Date Collected"}
-
-	err := h.csvWriter.Write(headers)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return h.csvWriter.Write(FindingRecord{}.GetHeaders())
 }
 
 // writeFindingsToOutput - takes a list of security findings and writes them to the output file.

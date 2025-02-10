@@ -4,4 +4,4 @@ security_hub_collector_results_bucket_name = "securityhub-collector-results-0373
 schedule_task_expression                   = "cron(35 * ? * * *)"
 aws_cloudwatch_log_group_name              = "security_hub_collector"
 assign_public_ip                           = true
-repo_tag                                   = "7003152"
+repo_tag                                   = "b6f8272"
