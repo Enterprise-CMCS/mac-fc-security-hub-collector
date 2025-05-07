@@ -1,6 +1,6 @@
 module github.com/CMSGov/security-hub-collector
 
-go 1.21.0
+go 1.23.0
 
 require (
 	github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241216204327-1ff4359b0f87
