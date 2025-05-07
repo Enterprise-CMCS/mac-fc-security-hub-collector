@@ -108,7 +108,7 @@ func GetTeamsFromTeamsAPI(baseURL string, apiKey string, rolePath string) (map[A
 
 			account := Account{
 				ID:          acct.ID,
-				Environment: acct.Name, // Use the alias as the environment value for compatibility with existing QuickSight dashboard
+				Environment: acct.Name, // Use the name as the environment value for compatibility with existing QuickSight dashboard
 				RoleARN:     fmt.Sprintf("arn:aws:iam::%s:role/%s", acct.ID, rolePath),
 			}
 
