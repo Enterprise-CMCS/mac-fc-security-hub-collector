@@ -3,7 +3,7 @@ module github.com/CMSGov/security-hub-collector
 go 1.23.0
 
 require (
-	github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis v0.0.0-20241216204327-1ff4359b0f87
+	github.com/Enterprise-CMCS/mac-fc-teams-api v0.0.0-20250501185240-740df2992ae6
 	github.com/aws/aws-sdk-go v1.54.17
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
@@ -31,7 +31,5 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.25.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.30.1 // indirect
 	github.com/aws/smithy-go v1.22.3 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 )

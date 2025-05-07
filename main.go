@@ -10,7 +10,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go/aws/session"
 
 	"github.com/CMSGov/security-hub-collector/internal/aws/client"
 	"github.com/CMSGov/security-hub-collector/pkg/helpers"
@@ -24,15 +23,15 @@ import (
 
 // Options describes the command line options available.
 type Options struct {
-	OutputFileName      string   `short:"o" long:"output" env:"OUTPUT_FILE" required:"false" description:"File to direct output to." default:"SecurityHub-Findings.csv"`
-	S3Region            string   `short:"s" long:"s3-region" env:"AWS_REGION" required:"false" description:"AWS region to use for s3 uploads."`
-	SecurityHubRegions  []string `short:"r" long:"sechub-regions" required:"false" default:"us-east-1" default:"us-west-2" description:"AWS regions to use for Security Hub findings."`
-	S3Bucket            string   `short:"b" long:"s3-bucket" required:"false" env:"S3_BUCKET" description:"S3 bucket to use to upload results. Optional, if not provided, results will not be uploaded to S3."`
-	S3Key               string   `short:"k" long:"s3-key" required:"false" env:"S3_KEY" description:"S3 bucket key, or path, to use to upload results."`
-	Base64TeamMap       string   `short:"m" long:"team-map" required:"false" env:"BASE64_TEAM_MAP" description:"Base64 encoded JSON containing team to account mappings."`
-	TeamsTable          string   `short:"t" long:"teams-table" required:"false" env:"ATHENA_TEAMS_TABLE" description:"Athena table containing team to account mappings"`
-	QueryOutputLocation string   `long:"query-output" required:"false" env:"QUERY_OUTPUT_LOCATION" description:"S3 location for Athena query output"`
-	CollectorRolePath   string   `long:"role-path" required:"false" env:"COLLECTOR_ROLE_PATH" description:"Path of the AWS IAM cross-account role that allows the Collector to access Security Hub"`
+	OutputFileName     string   `short:"o" long:"output" env:"OUTPUT_FILE" required:"false" description:"File to direct output to." default:"SecurityHub-Findings.csv"`
+	S3Region           string   `short:"s" long:"s3-region" env:"AWS_REGION" required:"false" description:"AWS region to use for s3 uploads."`
+	SecurityHubRegions []string `short:"r" long:"sechub-regions" required:"false" default:"us-east-1" default:"us-west-2" description:"AWS regions to use for Security Hub findings."`
+	S3Bucket           string   `short:"b" long:"s3-bucket" required:"false" env:"S3_BUCKET" description:"S3 bucket to use to upload results. Optional, if not provided, results will not be uploaded to S3."`
+	S3Key              string   `short:"k" long:"s3-key" required:"false" env:"S3_KEY" description:"S3 bucket key, or path, to use to upload results."`
+	Base64TeamMap      string   `short:"m" long:"team-map" required:"false" env:"BASE64_TEAM_MAP" description:"Base64 encoded JSON containing team to account mappings."`
+	TeamsAPIBaseURL    string   `long:"teams-api-base-url" required:"false" env:"TEAMS_API_BASE_URL" description:"Base URL of the Teams API, which provides team to account mappings"`
+	TeamsAPIKey        string   `long:"teams-api-key" required:"false" env:"TEAMS_API_KEY" description:"API key for the Teams API, which provides team to account mappings"`
+	CollectorRolePath  string   `long:"role-path" required:"false" env:"COLLECTOR_ROLE_PATH" description:"Path of the AWS IAM cross-account role that allows the Collector to access Security Hub"`
 }
 
 var options Options
@@ -87,19 +86,19 @@ func writeFindingsToS3() error {
 	return nil
 }
 
-// collectFindings is doing the bulk of our work here; it reads in the team map from Athena,
+// collectFindings is doing the bulk of our work here; it reads in the team map from the Teams API,
 // builds the HubCollector object, writes headers to the output file, and processes findings
 // depending on the definitions in the team map and the CLI options.
 func collectFindings(secHubRegions []string) error {
 	// Check which source to use for team data and validate required fields
-	if options.Base64TeamMap == "" && options.TeamsTable == "" {
-		return fmt.Errorf("either team map file and Athena teams must be specified")
+	if options.Base64TeamMap == "" && options.TeamsAPIBaseURL == "" {
+		return fmt.Errorf("either team map file or Teams API base URL must be specified")
 	}
-	if options.Base64TeamMap != "" && options.TeamsTable != "" {
-		return fmt.Errorf("both team map file and Athena teams table specified; please use only one source of team map data")
+	if options.Base64TeamMap != "" && options.TeamsAPIBaseURL != "" {
+		return fmt.Errorf("both team map file and Teams API base URL specified; please use only one source of team map data")
 	}
-	if options.TeamsTable != "" && (options.CollectorRolePath == "" || options.QueryOutputLocation == "") {
-		return fmt.Errorf("collector role path and query output location are required when using Athena teams table")
+	if options.TeamsAPIBaseURL != "" && options.TeamsAPIKey == "" {
+		return fmt.Errorf("Teams API key required when using Teams API")
 	}
 
 	h := securityhubcollector.HubCollector{}
@@ -116,24 +115,18 @@ func collectFindings(secHubRegions []string) error {
 		}
 	}()
 
-	// Create AWS SDK V1 session because athenalib requires it
-	sess := session.Must(session.NewSession())
-	if err != nil {
-		log.Fatalf("could not create AWS session: %v", err)
-	}
-
 	var accountsToTeams map[teams.Account]string
 
-	// either get the map from the team map file or from Athena, depending on the specified CLI flags
+	// either get the map from the team map file or from the Teams API, depending on the specified CLI flags
 	if options.Base64TeamMap != "" {
 		accountsToTeams, err = teams.ParseTeamMap(options.Base64TeamMap)
 		if err != nil {
 			log.Fatalf("could not parse team map file: %v", err)
 		}
 	} else {
-		accountsToTeams, err = teams.GetTeamsFromAthena(sess, options.TeamsTable, options.QueryOutputLocation, options.CollectorRolePath)
+		accountsToTeams, err = teams.GetTeamsFromTeamsAPI(options.TeamsAPIBaseURL, options.TeamsAPIKey, options.CollectorRolePath)
 		if err != nil {
-			log.Fatalf("could not load teams from Athena: %v", err)
+			log.Fatalf("could not load teams from Teams API: %v", err)
 		}
 	}
 

@@ -7,12 +7,11 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis/pkg/athenalib"
+	teamsapi "github.com/Enterprise-CMCS/mac-fc-teams-api/client"
 	"github.com/aws/aws-sdk-go/aws/arn"
-	"github.com/aws/aws-sdk-go/aws/session"
 )
 
-// SEATool accounts are in the Athena team data (because we get CUR data from them)
+// SEATool accounts are in the Teams API team data (because we get CUR data from them)
 // but not in the MACBIS OU, so our cloud rule doesn't push the cross account role to them
 var seaToolAccountIDs = []string{
 	"360433083926",
@@ -77,40 +76,44 @@ func ParseTeamMap(base64Str string) (accountsToTeams map[Account]string, err err
 	return accountsToTeams, nil
 }
 
-// GetTeamsFromAthena loads a map of Accounts to team names from an Athena table
-func GetTeamsFromAthena(sess *session.Session, teamsTable, queryOutputLocation, rolePath string) (map[Account]string, error) {
-	accounts, err := athenalib.LoadTeams(sess, teamsTable, queryOutputLocation)
+// GetTeamsFromTeamsAPI loads a map of Accounts to team names from the Teams API
+func GetTeamsFromTeamsAPI(baseURL string, apiKey string, rolePath string) (map[Account]string, error) {
+	client := teamsapi.NewClient(baseURL, apiKey)
+
+	teams, err := client.GetAllTeams()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load teams from Athena: %w", err)
+		return nil, fmt.Errorf("failed to load teams from Teams API: %w", err)
 	}
 
 	accountsToTeams := make(map[Account]string)
 
-	for _, acct := range accounts {
-		// skip inactive accounts
-		if acct.IsInactive {
-			continue
-		}
-
-		// skip SEATool accounts
-		if slices.Contains(seaToolAccountIDs, acct.AWSAccountID) {
-			continue
-		}
-
-		// check for duplicate account IDs
-		if hasAccount(accountsToTeams, acct.AWSAccountID) {
-			return nil, &duplicateAccountIDError{
-				message: fmt.Sprintf("duplicate account ID in Athena team data: %s", acct.AWSAccountID),
+	for _, team := range teams {
+		for _, acct := range team.AWSAccounts {
+			// skip inactive accounts
+			if acct.IsInactive {
+				continue
 			}
-		}
 
-		account := Account{
-			ID:          acct.AWSAccountID,
-			Environment: acct.Alias, // Use the alias as the environment value for compatibility with existing QuickSight dashboard
-			RoleARN:     fmt.Sprintf("arn:aws:iam::%s:role/%s", acct.AWSAccountID, rolePath),
-		}
+			// skip SEATool accounts
+			if slices.Contains(seaToolAccountIDs, acct.ID) {
+				continue
+			}
 
-		accountsToTeams[account] = acct.Team
+			// check for duplicate account IDs
+			if hasAccount(accountsToTeams, acct.ID) {
+				return nil, &duplicateAccountIDError{
+					message: fmt.Sprintf("duplicate account ID in Teams API data: %s", acct.ID),
+				}
+			}
+
+			account := Account{
+				ID:          acct.ID,
+				Environment: acct.Name, // Use the alias as the environment value for compatibility with existing QuickSight dashboard
+				RoleARN:     fmt.Sprintf("arn:aws:iam::%s:role/%s", acct.ID, rolePath),
+			}
+
+			accountsToTeams[account] = team.Name
+		}
 	}
 
 	return accountsToTeams, nil
