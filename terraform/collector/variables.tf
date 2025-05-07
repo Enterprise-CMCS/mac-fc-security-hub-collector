@@ -32,3 +32,8 @@ variable "repo_tag" {
   description = "ECR Tag of the image to run in the ECS Task"
   type        = string
 }
+
+variable "execute_api_vpc_endpoint_security_group_id" {
+  description = "To allow the collector to call the Teams API via the execute-api VPC endpoint"
+  type        = string
+}

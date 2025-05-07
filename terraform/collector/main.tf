@@ -155,7 +155,7 @@ resource "aws_ecs_cluster" "security_hub_collector_runner" {
 
 ########## Use the securityhub collector runner module ##########
 module "security_hub_collector_runner" {
-  source                    = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=b2ec585a8e1bb3a7ca336467bd28327c142394b8"
+  source                    = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=e120cc3cdd19aa192a75473051e5bdd0a439be69"
   app_name                  = "security-hub"
   environment               = "dev"
   task_name                 = "scheduled-collector"
@@ -171,6 +171,33 @@ module "security_hub_collector_runner" {
   assign_public_ip          = var.assign_public_ip
   role_path                 = "/delegatedadmin/developer/"
   permissions_boundary      = "arn:aws:iam::037370603820:policy/cms-cloud-admin/developer-boundary-policy"
-  team_config               = { athena : { teams_table : "athenacurcfn_cms_cloud_cur_monthly.teams", collector_role_path : "delegatedadmin/developer/ct-cmcs-mac-fc-cost-usage-role", query_output_location : "s3://cms-macbis-cost-analysis/professor-mac/teams-query" } }
   scheduled_task_state      = "ENABLED" #Set to DISABLED to stop scheduled execution
+
+  team_config = {
+    teams_api : {
+      base_url : "https://vshjmodi2c.execute-api.us-east-1.amazonaws.com/teams-api-prod",
+      api_key_param : aws_ssm_parameter.teams_api_key.name,
+      collector_role_path : "delegatedadmin/developer/ct-cmcs-mac-fc-cost-usage-role"
+    }
+  }
+}
+
+resource "aws_ssm_parameter" "teams_api_key" {
+  name  = "security-hub-dev-teams-api-key" # must match `{app_name}-{environment}*` per task execution role policy
+  type  = "SecureString"
+  value = "replace with real value"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "aws_security_group_rule" "allow_security_hub_collector_to_execute_api" {
+  description              = "HTTPS from Security Hub Collector"
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = var.execute_api_vpc_endpoint_security_group_id
+  source_security_group_id = module.security_hub_collector_runner.task_security_group_id
 }
