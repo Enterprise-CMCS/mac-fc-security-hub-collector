@@ -2,13 +2,12 @@
 
 ## Description
 
-This tool pulls findings from AWS Security Hub and outputs them for consumption by visualization tools. To use this tool, you need one of the following, depending on whether you provide team data via Athena or a JSON file:
+This tool pulls findings from AWS Security Hub and outputs them for consumption by visualization tools. To use this tool, you need one of the following, depending on whether you provide team data via the Teams API or a JSON file:
 
-To configure with an Athena table:
+To configure with the Teams API:
 
-- an Athena table of teams to accounts that follows the [format expected by the Athena library](https://github.com/Enterprise-CMCS/mac-fc-macbis-cost-analysis/blob/250739e71c9617344a584aab82d5785334c37bba/pkg/athenalib)
-- an S3 bucket for Athena query outputs
-- a single IAM role that is valid for all of the accounts in the Athena table
+- an API key for the Teams API
+- a single IAM role that is valid for all of the accounts in the Teams API
 
 To configure with a JSON team map:
 
@@ -40,13 +39,13 @@ To run the Docker image locally for testing, do the following:
 2. `docker build . -t local-collector-test`
 3. set AWS creds in the environment (`AWS_SECRET_ACCESS_KEY, AWS_ACCESS_KEY_ID, AWS_SESSION_TOKEN`)
 4. run the image:
-   - using an Athena table
+   - using the Teams API
 
    ```bash
    docker run \
    -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_ACCESS_KEY_ID \
-   -e ATHENA_TEAMS_TABLE=athenacurcfn_cms_cloud_cur_monthly.teams \
-   -e QUERY_OUTPUT_LOCATION=s3://cms-macbis-cost-analysis/professor-mac/teams-query/ \
+   -e TEAMS_API_KEY \
+   -e TEAMS_API_BASE_URL=https://vshjmodi2c.execute-api.us-east-1.amazonaws.com/teams-api-prod \
    -e COLLECTOR_ROLE_PATH=delegatedadmin/developer/ct-cmcs-mac-fc-cost-usage-role \
    -e AWS_REGION=us-east-1 \
    -e S3_BUCKET=securityhub-collector-results-037370603820s \

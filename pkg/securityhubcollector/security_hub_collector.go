@@ -129,7 +129,7 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName string
 				},
 			},
 		},
-		MaxResults: 100,
+		MaxResults: aws.Int32(100),
 	}
 
 	securityHubClient, err := client.MakeSecurityHubClient(secHubRegion, account.RoleARN)
