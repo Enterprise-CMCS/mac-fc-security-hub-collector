@@ -8,7 +8,7 @@ import (
 	"slices"
 
 	teamsapi "github.com/Enterprise-CMCS/mac-fc-teams-api/client"
-	"github.com/aws/aws-sdk-go/aws/arn"
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
 )
 
 // SEATool accounts are in the Teams API team data (because we get CUR data from them)
