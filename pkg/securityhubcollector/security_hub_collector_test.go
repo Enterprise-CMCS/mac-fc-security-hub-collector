@@ -36,6 +36,7 @@ func TestConvertFindingToRows(t *testing.T) {
 			teamName:    "Test Team 1",
 			environment: "dev",
 			finding: types.AwsSecurityFinding{
+				Id:           aws.String("testID1"),
 				AwsAccountId: aws.String("000000000001"),
 				CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
 				Description:  aws.String("Active Test Finding"),
@@ -66,6 +67,8 @@ func TestConvertFindingToRows(t *testing.T) {
 				{
 					"Test Team 1",
 					"AwsEc2Vpc",
+					"testID1",
+					"arn:aws:securityhub:us-east-1::product/aws/securityhub",
 					"Active Test Finding Title",
 					"Active Test Finding",
 					"HIGH",
@@ -91,6 +94,7 @@ func TestConvertFindingToRows(t *testing.T) {
 			teamName:    "Test Team 1",
 			environment: "impl",
 			finding: types.AwsSecurityFinding{
+				Id:           aws.String("testID2"),
 				AwsAccountId: aws.String("000000000001"),
 				CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
 				Description:  aws.String("MultiResource Test Finding"),
@@ -126,6 +130,8 @@ func TestConvertFindingToRows(t *testing.T) {
 				{
 					"Test Team 1",
 					"AwsEc2Vpc",
+					"testID2",
+					"arn:aws:securityhub:us-west-2::product/aws/securityhub",
 					"MultiResource Test Finding Title",
 					"MultiResource Test Finding",
 					"HIGH",
@@ -146,6 +152,8 @@ func TestConvertFindingToRows(t *testing.T) {
 				{
 					"Test Team 1",
 					"AwsEc2Vpc",
+					"testID2",
+					"arn:aws:securityhub:us-west-2::product/aws/securityhub",
 					"MultiResource Test Finding Title",
 					"MultiResource Test Finding",
 					"HIGH",
@@ -171,6 +179,7 @@ func TestConvertFindingToRows(t *testing.T) {
 			teamName:    "Test Team 1",
 			environment: "prod",
 			finding: types.AwsSecurityFinding{
+				Id:           aws.String("testID3"),
 				AwsAccountId: aws.String("000000000001"),
 				CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
 				Description:  aws.String("Active Test Finding"),
@@ -201,6 +210,8 @@ func TestConvertFindingToRows(t *testing.T) {
 				{
 					"Test Team 1",
 					"AwsEc2Vpc",
+					"testID3",
+					"arn:aws:securityhub:us-east-1::product/aws/securityhub",
 					"Active Test Finding Title",
 					"Active Test Finding",
 					"HIGH",
@@ -226,6 +237,7 @@ func TestConvertFindingToRows(t *testing.T) {
 			teamName:    "Test Team 1",
 			environment: "dev",
 			finding: types.AwsSecurityFinding{
+				Id:           aws.String("testID4"),
 				AwsAccountId: aws.String("000000000001"),
 				CreatedAt:    aws.String("2020-03-22T13:22:13.933Z"),
 				Description:  aws.String("Suppressed Test Finding"),
@@ -256,6 +268,8 @@ func TestConvertFindingToRows(t *testing.T) {
 				{
 					"Test Team 1",
 					"AwsEc2Vpc",
+					"testID4",
+					"arn:aws:securityhub:us-east-1::product/aws/securityhub",
 					"Suppressed Test Finding Title",
 					"Suppressed Test Finding",
 					"HIGH",
