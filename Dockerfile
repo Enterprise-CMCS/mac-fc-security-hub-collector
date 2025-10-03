@@ -1,11 +1,11 @@
-FROM golang:1.23 as build
+FROM golang:1.23 AS build
 COPY ./docker-gitconfig /root/.gitconfig
 WORKDIR /build
 COPY . .
 RUN CGO_ENABLED=0 GOBIN=/bin/ go install .
 
-FROM alpine:3.21 as certs
-RUN apk --no-cache add ca-certificates=20241121-r1
+FROM alpine:3.21 AS certs
+RUN apk --no-cache add ca-certificates
 
 FROM scratch
 COPY --from=build /bin/security-hub-collector /bin/security-hub-collector

@@ -155,6 +155,8 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName string
 type FindingRecord struct {
 	Team             string `csv:"Team"`
 	ResourceType     string `csv:"Resource Type"`
+	Id               string `csv:"Id"`
+	ProductARN       string `csv:"Product ARN"`
 	Title            string `csv:"Title"`
 	Description      string `csv:"Description"`
 	SeverityLabel    string `csv:"Severity Label"`
@@ -218,17 +220,19 @@ func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, te
 
 		record := FindingRecord{
 			Team:          teamName,
-			ResourceType:  *r.Type,
-			Title:         *finding.Title,
-			Description:   *finding.Description,
-			ResourceID:    *r.Id,
-			AWSAccountID:  *finding.AwsAccountId,
+			ResourceType:  aws.ToString(r.Type),
+			Id:            aws.ToString(finding.Id),
+			ProductARN:    aws.ToString(finding.ProductArn),
+			Title:         aws.ToString(finding.Title),
+			Description:   aws.ToString(finding.Description),
+			ResourceID:    aws.ToString(r.Id),
+			AWSAccountID:  aws.ToString(finding.AwsAccountId),
 			RecordState:   string(finding.RecordState),
-			CreatedAt:     standardizeTimestamp(*finding.CreatedAt),
-			UpdatedAt:     standardizeTimestamp(*finding.UpdatedAt),
+			CreatedAt:     standardizeTimestamp(aws.ToString(finding.CreatedAt)),
+			UpdatedAt:     standardizeTimestamp(aws.ToString(finding.UpdatedAt)),
 			Region:        region,
 			Environment:   environment,
-			Product:       *finding.ProductName,
+			Product:       aws.ToString(finding.ProductName),
 			DateCollected: clock.Now().Format("01-02-2006"),
 		}
 
@@ -239,10 +243,10 @@ func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, te
 
 		if finding.Remediation != nil && finding.Remediation.Recommendation != nil {
 			if finding.Remediation.Recommendation.Text != nil {
-				record.RemediationText = *finding.Remediation.Recommendation.Text
+				record.RemediationText = aws.ToString(finding.Remediation.Recommendation.Text)
 			}
 			if finding.Remediation.Recommendation.Url != nil {
-				record.RemediationURL = *finding.Remediation.Recommendation.Url
+				record.RemediationURL = aws.ToString(finding.Remediation.Recommendation.Url)
 			}
 		}
 
