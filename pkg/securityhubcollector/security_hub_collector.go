@@ -234,11 +234,23 @@ func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, te
 			DateCollected: clock.Now().Format("01-02-2006"),
 		}
 
-		record.SeverityLabel = string(finding.Severity.Label)
-		record.RemediationText = aws.ToString(finding.Remediation.Recommendation.Text)
-		record.RemediationURL = aws.ToString(finding.Remediation.Recommendation.Url)
-		record.ComplianceStatus = string(finding.Compliance.Status)
-		record.WorkflowStatus = string(finding.Workflow.Status)
+		// Handle optional pointer fields with inline nil checks
+		if finding.Severity != nil {
+			record.SeverityLabel = string(finding.Severity.Label)
+		}
+
+		if finding.Remediation != nil && finding.Remediation.Recommendation != nil {
+			record.RemediationText = aws.ToString(finding.Remediation.Recommendation.Text)
+			record.RemediationURL = aws.ToString(finding.Remediation.Recommendation.Url)
+		}
+
+		if finding.Compliance != nil {
+			record.ComplianceStatus = string(finding.Compliance.Status)
+		}
+
+		if finding.Workflow != nil {
+			record.WorkflowStatus = string(finding.Workflow.Status)
+		}
 
 		output = append(output, record.ToSanitizedSlice())
 	}
