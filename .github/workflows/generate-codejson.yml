@@ -2,10 +2,6 @@ name: Generate code.json
 on:
   schedule:
    - cron: "0 0 1 * *" # monthly
-  push:
-    branches:
-      - bharvey-add-fields
-
 
 jobs:
   update-code-json:
