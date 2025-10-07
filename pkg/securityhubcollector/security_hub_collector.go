@@ -13,8 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/securityhub"
 	"github.com/aws/aws-sdk-go-v2/service/securityhub/types"
 
-	"github.com/CMSGov/security-hub-collector/internal/aws/client"
-	"github.com/CMSGov/security-hub-collector/pkg/teams"
+	"github.com/Enterprise-CMCS/security-hub-collector/internal/aws/client"
+	"github.com/Enterprise-CMCS/security-hub-collector/pkg/teams"
 
 	"encoding/csv"
 	"os"
@@ -155,7 +155,7 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName string
 type FindingRecord struct {
 	Team             string `csv:"Team"`
 	ResourceType     string `csv:"Resource Type"`
-	Id               string `csv:"Id"`
+	ID               string `csv:"ID"`
 	ProductARN       string `csv:"Product ARN"`
 	Title            string `csv:"Title"`
 	Description      string `csv:"Description"`
@@ -211,17 +211,15 @@ func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, te
 	var output [][]string
 
 	for _, r := range finding.Resources {
-		region := ""
-		if r.Region != nil {
-			region = *r.Region
-		} else if finding.Region != nil {
-			region = *finding.Region
+		region := aws.ToString(r.Region)
+		if region == "" {
+			region = aws.ToString(finding.Region)
 		}
 
 		record := FindingRecord{
 			Team:          teamName,
 			ResourceType:  aws.ToString(r.Type),
-			Id:            aws.ToString(finding.Id),
+			ID:            aws.ToString(finding.Id),
 			ProductARN:    aws.ToString(finding.ProductArn),
 			Title:         aws.ToString(finding.Title),
 			Description:   aws.ToString(finding.Description),
@@ -236,27 +234,11 @@ func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, te
 			DateCollected: clock.Now().Format("01-02-2006"),
 		}
 
-		// Handle optional fields with nil checks
-		if finding.Severity != nil {
-			record.SeverityLabel = string(finding.Severity.Label)
-		}
-
-		if finding.Remediation != nil && finding.Remediation.Recommendation != nil {
-			if finding.Remediation.Recommendation.Text != nil {
-				record.RemediationText = aws.ToString(finding.Remediation.Recommendation.Text)
-			}
-			if finding.Remediation.Recommendation.Url != nil {
-				record.RemediationURL = aws.ToString(finding.Remediation.Recommendation.Url)
-			}
-		}
-
-		if finding.Compliance != nil {
-			record.ComplianceStatus = string(finding.Compliance.Status)
-		}
-
-		if finding.Workflow != nil {
-			record.WorkflowStatus = string(finding.Workflow.Status)
-		}
+		record.SeverityLabel = string(finding.Severity.Label)
+		record.RemediationText = aws.ToString(finding.Remediation.Recommendation.Text)
+		record.RemediationURL = aws.ToString(finding.Remediation.Recommendation.Url)
+		record.ComplianceStatus = string(finding.Compliance.Status)
+		record.WorkflowStatus = string(finding.Workflow.Status)
 
 		output = append(output, record.ToSanitizedSlice())
 	}

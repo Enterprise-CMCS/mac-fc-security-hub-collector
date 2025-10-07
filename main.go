@@ -11,10 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
-	"github.com/CMSGov/security-hub-collector/internal/aws/client"
-	"github.com/CMSGov/security-hub-collector/pkg/helpers"
-	"github.com/CMSGov/security-hub-collector/pkg/securityhubcollector"
-	"github.com/CMSGov/security-hub-collector/pkg/teams"
+	"github.com/Enterprise-CMCS/security-hub-collector/internal/aws/client"
+	"github.com/Enterprise-CMCS/security-hub-collector/pkg/helpers"
+	"github.com/Enterprise-CMCS/security-hub-collector/pkg/securityhubcollector"
+	"github.com/Enterprise-CMCS/security-hub-collector/pkg/teams"
 
 	flag "github.com/jessevdk/go-flags"
 

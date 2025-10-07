@@ -1,4 +1,4 @@
-module github.com/CMSGov/security-hub-collector
+module github.com/Enterprise-CMCS/security-hub-collector
 
 go 1.23.0
 
