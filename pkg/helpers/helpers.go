@@ -16,7 +16,7 @@ func CombineErrors(errs ...error) error {
 		}
 	}
 	if foundErr {
-		return fmt.Errorf(strings.Join(errStrs, "; "))
+		return fmt.Errorf("%s", strings.Join(errStrs, "; "))
 	}
 	return nil
 }
