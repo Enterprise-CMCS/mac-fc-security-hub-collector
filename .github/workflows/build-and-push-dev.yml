@@ -15,10 +15,10 @@ jobs:
       contents: read
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Get credentials
-        uses: aws-actions/configure-aws-credentials@v3
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::037370603820:role/delegatedadmin/developer/security-hub-collector-github-oidc
           role-session-name: security_hub_collector_github_actions
@@ -33,10 +33,11 @@ jobs:
 
       - name: Generate token from GitHub App
         id: create_token
-        uses: tibdex/github-app-token@v2.1.0
+        uses: actions/create-github-app-token@v2
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PEM }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PEM }}
+          owner: Enterprise-CMCS
 
       - name: Configure git for private modules
         env:

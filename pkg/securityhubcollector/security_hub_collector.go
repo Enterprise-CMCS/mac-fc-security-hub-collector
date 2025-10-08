@@ -13,8 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/securityhub"
 	"github.com/aws/aws-sdk-go-v2/service/securityhub/types"
 
-	"github.com/CMSGov/security-hub-collector/internal/aws/client"
-	"github.com/CMSGov/security-hub-collector/pkg/teams"
+	"github.com/Enterprise-CMCS/security-hub-collector/internal/aws/client"
+	"github.com/Enterprise-CMCS/security-hub-collector/pkg/teams"
 
 	"encoding/csv"
 	"os"
@@ -155,6 +155,8 @@ func (h *HubCollector) GetFindingsAndWriteToOutput(secHubRegion, teamName string
 type FindingRecord struct {
 	Team             string `csv:"Team"`
 	ResourceType     string `csv:"Resource Type"`
+	ID               string `csv:"ID"`
+	ProductARN       string `csv:"Product ARN"`
 	Title            string `csv:"Title"`
 	Description      string `csv:"Description"`
 	SeverityLabel    string `csv:"Severity Label"`
@@ -209,41 +211,37 @@ func (h *HubCollector) convertFindingToRows(finding types.AwsSecurityFinding, te
 	var output [][]string
 
 	for _, r := range finding.Resources {
-		region := ""
-		if r.Region != nil {
-			region = *r.Region
-		} else if finding.Region != nil {
-			region = *finding.Region
+		region := aws.ToString(r.Region)
+		if region == "" {
+			region = aws.ToString(finding.Region)
 		}
 
 		record := FindingRecord{
 			Team:          teamName,
-			ResourceType:  *r.Type,
-			Title:         *finding.Title,
-			Description:   *finding.Description,
-			ResourceID:    *r.Id,
-			AWSAccountID:  *finding.AwsAccountId,
+			ResourceType:  aws.ToString(r.Type),
+			ID:            aws.ToString(finding.Id),
+			ProductARN:    aws.ToString(finding.ProductArn),
+			Title:         aws.ToString(finding.Title),
+			Description:   aws.ToString(finding.Description),
+			ResourceID:    aws.ToString(r.Id),
+			AWSAccountID:  aws.ToString(finding.AwsAccountId),
 			RecordState:   string(finding.RecordState),
-			CreatedAt:     standardizeTimestamp(*finding.CreatedAt),
-			UpdatedAt:     standardizeTimestamp(*finding.UpdatedAt),
+			CreatedAt:     standardizeTimestamp(aws.ToString(finding.CreatedAt)),
+			UpdatedAt:     standardizeTimestamp(aws.ToString(finding.UpdatedAt)),
 			Region:        region,
 			Environment:   environment,
-			Product:       *finding.ProductName,
+			Product:       aws.ToString(finding.ProductName),
 			DateCollected: clock.Now().Format("01-02-2006"),
 		}
 
-		// Handle optional fields with nil checks
+		// Handle optional pointer fields with inline nil checks
 		if finding.Severity != nil {
 			record.SeverityLabel = string(finding.Severity.Label)
 		}
 
 		if finding.Remediation != nil && finding.Remediation.Recommendation != nil {
-			if finding.Remediation.Recommendation.Text != nil {
-				record.RemediationText = *finding.Remediation.Recommendation.Text
-			}
-			if finding.Remediation.Recommendation.Url != nil {
-				record.RemediationURL = *finding.Remediation.Recommendation.Url
-			}
+			record.RemediationText = aws.ToString(finding.Remediation.Recommendation.Text)
+			record.RemediationURL = aws.ToString(finding.Remediation.Recommendation.Url)
 		}
 
 		if finding.Compliance != nil {

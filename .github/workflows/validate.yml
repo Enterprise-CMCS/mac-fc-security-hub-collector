@@ -6,21 +6,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: checkout
-      uses: actions/checkout@v4.2.2
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0
 
     - name: setup go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v6
       with:
         go-version-file: go.mod
 
     - name: Generate token from GitHub App
       id: create_token
-      uses: tibdex/github-app-token@v2.1.0
+      uses: actions/create-github-app-token@v2
       with:
-        app_id: ${{ secrets.APP_ID }}
-        private_key: ${{ secrets.APP_PEM }}
+        app-id: ${{ secrets.APP_ID }}
+        private-key: ${{ secrets.APP_PEM }}
+        owner: Enterprise-CMCS
 
     - name: Configure git for private modules
       env:
@@ -30,7 +31,7 @@ jobs:
         git config --global url."https://cmcs-github-svc-user:${TOKEN}@github.com/Enterprise-CMCS/".insteadOf "https://github.com/Enterprise-CMCS/"
 
     - name: Go modules cache
-      uses: actions/cache@v4.2.0
+      uses: actions/cache@v4
       with:
         path: |
           ~/go/pkg/mod
@@ -40,12 +41,12 @@ jobs:
           ${{ runner.os }}-go-
 
     - name: setup python
-      uses: actions/setup-python@v5.3.0
+      uses: actions/setup-python@v6
       with:
         python-version: 3.13
 
     - name: pre-commit-cache
-      uses: actions/cache@v4.2.0
+      uses: actions/cache@v4
       env:
         cache-name: pre-commit-dot-cache
       with:

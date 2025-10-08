@@ -14,10 +14,11 @@ jobs:
 
       - name: Generate token from GitHub App
         id: create_token
-        uses: tibdex/github-app-token@v2.1.0
+        uses: actions/create-github-app-token@v2
         with:
-          app_id: ${{ secrets.PR_PERMS_APP_ID }}
-          private_key: ${{ secrets.PR_PERMS_APP_SECRET }}
+          app-id: ${{ secrets.PR_PERMS_APP_ID }}
+          private-key: ${{ secrets.PR_PERMS_APP_SECRET }}
+          owner: Enterprise-CMCS
 
       - name: Update code.json
         uses: DSACMS/automated-codejson-generator@v1.0.0

@@ -1,6 +1,6 @@
-module github.com/CMSGov/security-hub-collector
+module github.com/Enterprise-CMCS/security-hub-collector
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/Enterprise-CMCS/mac-fc-teams-api v0.0.0-20250501185240-740df2992ae6
