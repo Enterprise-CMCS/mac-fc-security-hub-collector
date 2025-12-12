@@ -6,7 +6,8 @@ data "aws_iam_openid_connect_provider" "github_actions" {
 }
 
 module "iam_github_oidc_role_security_hub_collector" {
-  source = "terraform-aws-modules/iam/aws//modules/iam-github-oidc-role"
+  source  = "terraform-aws-modules/iam/aws//modules/iam-github-oidc-role"
+  version = "~> 5.60"
 
   name = "security-hub-collector-github-oidc"
 
