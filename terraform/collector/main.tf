@@ -21,7 +21,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.58.0"
+      version = "~> 6.0"
     }
   }
 
@@ -85,6 +85,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "security_hub_collector" {
   rule {
     id     = "security-hub-collector"
     status = "Enabled"
+
+    filter {}
 
     expiration {
       days = 90
