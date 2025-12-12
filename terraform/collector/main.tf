@@ -157,7 +157,7 @@ resource "aws_ecs_cluster" "security_hub_collector_runner" {
 
 ########## Use the securityhub collector runner module ##########
 module "security_hub_collector_runner" {
-  source                    = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=e120cc3cdd19aa192a75473051e5bdd0a439be69"
+  source                    = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=bharvey-add-output"
   app_name                  = "security-hub"
   environment               = "dev"
   task_name                 = "scheduled-collector"
@@ -202,4 +202,33 @@ resource "aws_security_group_rule" "allow_security_hub_collector_to_execute_api"
   protocol                 = "tcp"
   security_group_id        = var.execute_api_vpc_endpoint_security_group_id
   source_security_group_id = module.security_hub_collector_runner.task_security_group_id
+}
+
+module "sns_kms_key" {
+  source = "github.com/Enterprise-CMCS/mac-fc-shared//lib/terraform/sns_kms_key?ref=e762290"
+
+  alias = "security-hub-collector-dev-sns"
+
+  aws_event_source_principals = [{
+    type        = "Service"
+    identifiers = ["events.amazonaws.com"]
+  }]
+}
+
+resource "aws_sns_topic" "alarm" {
+  name              = "security-hub-collector-dev-alarm"
+  kms_master_key_id = module.sns_kms_key.id
+}
+
+resource "aws_sns_topic_subscription" "alarm" {
+  topic_arn = aws_sns_topic.alarm.arn
+  protocol  = "email"
+  endpoint  = "cms-macfc@corbalt.com"
+}
+
+module "ecs_task_failure_alert" {
+  source = "github.com/Enterprise-CMCS/mac-fc-shared//lib/terraform/ecs_task_failure_alert?ref=bharvey-exit-code"
+
+  task_definition_arn_without_revision = module.security_hub_collector_runner.task_definition_arn_without_revision
+  sns_topic_arn                        = aws_sns_topic.alarm.arn
 }
