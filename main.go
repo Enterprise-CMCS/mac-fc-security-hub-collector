@@ -101,6 +101,25 @@ func collectFindings(secHubRegions []string) error {
 		return fmt.Errorf("Teams API key required when using Teams API")
 	}
 
+	// Duration for the program to run.
+	totalDuration := 15 * time.Second
+
+	// Interval for printing the status message.
+	statusInterval := 5 * time.Second
+
+	// Calculate the number of iterations needed.
+	iterations := int(totalDuration / statusInterval)
+
+	// Loop to print status every 10 seconds for 5 minutes.
+	for i := 1; i <= iterations; i++ {
+		fmt.Printf("Status: Running... (%d/%d)\n", i, iterations)
+		time.Sleep(statusInterval)
+	}
+
+	// Exiting with a status code of 1.
+	fmt.Println("Program finished. Exiting with status code 1.")
+	os.Exit(1)
+
 	h := securityhubcollector.HubCollector{}
 	err := h.Initialize(options.OutputFileName)
 	if err != nil {
