@@ -157,7 +157,7 @@ resource "aws_ecs_cluster" "security_hub_collector_runner" {
 
 ########## Use the securityhub collector runner module ##########
 module "security_hub_collector_runner" {
-  source                    = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=bharvey-add-output"
+  source                    = "github.com/CMSgov/security-hub-collector-ecs-runner?ref=70ae03c"
   app_name                  = "security-hub"
   environment               = "dev"
   task_name                 = "scheduled-collector"
