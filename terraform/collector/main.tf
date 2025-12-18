@@ -220,6 +220,30 @@ resource "aws_sns_topic" "alarm" {
   kms_master_key_id = module.sns_kms_key.id
 }
 
+resource "aws_sns_topic_policy" "eventbridge_publish" {
+  arn = aws_sns_topic.alarm.arn
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowEventBridgePublish"
+        Effect = "Allow"
+        Principal = {
+          Service = "events.amazonaws.com"
+        }
+        Action   = "SNS:Publish"
+        Resource = aws_sns_topic.alarm.arn
+        Condition = {
+          ArnEquals = {
+            "aws:SourceArn" = module.ecs_task_failure_alert.eventbridge_rule_arn
+          }
+        }
+      }
+    ]
+  })
+}
+
 resource "aws_sns_topic_subscription" "alarm" {
   topic_arn = aws_sns_topic.alarm.arn
   protocol  = "email"
@@ -227,8 +251,8 @@ resource "aws_sns_topic_subscription" "alarm" {
 }
 
 module "ecs_task_failure_alert" {
-  source = "github.com/Enterprise-CMCS/mac-fc-shared//lib/terraform/ecs_task_failure_alert?ref=bharvey-exit-code"
+  source = "github.com/Enterprise-CMCS/mac-fc-shared//lib/terraform/ecs_task_failure_alert?ref=55d76e0"
 
-  task_definition_arn_without_revision = module.security_hub_collector_runner.task_definition_arn_without_revision
-  sns_topic_arn                        = aws_sns_topic.alarm.arn
+  task_definition_arn_prefix = module.security_hub_collector_runner.task_definition_arn_without_revision
+  sns_topic_arn              = aws_sns_topic.alarm.arn
 }
