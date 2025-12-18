@@ -204,6 +204,11 @@ resource "aws_security_group_rule" "allow_security_hub_collector_to_execute_api"
   source_security_group_id = module.security_hub_collector_runner.task_security_group_id
 }
 
+resource "aws_sns_topic" "alarm" {
+  name              = "security-hub-collector-dev-alarm"
+  kms_master_key_id = module.sns_kms_key.id
+}
+
 module "sns_kms_key" {
   source = "github.com/Enterprise-CMCS/mac-fc-shared//lib/terraform/sns_kms_key?ref=e762290"
 
@@ -215,39 +220,36 @@ module "sns_kms_key" {
   }]
 }
 
-resource "aws_sns_topic" "alarm" {
-  name              = "security-hub-collector-dev-alarm"
-  kms_master_key_id = module.sns_kms_key.id
-}
-
-resource "aws_sns_topic_policy" "eventbridge_publish" {
-  arn = aws_sns_topic.alarm.arn
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "AllowEventBridgePublish"
-        Effect = "Allow"
-        Principal = {
-          Service = "events.amazonaws.com"
-        }
-        Action   = "SNS:Publish"
-        Resource = aws_sns_topic.alarm.arn
-        Condition = {
-          ArnEquals = {
-            "aws:SourceArn" = module.ecs_task_failure_alert.eventbridge_rule_arn
-          }
-        }
-      }
-    ]
-  })
-}
-
 resource "aws_sns_topic_subscription" "alarm" {
   topic_arn = aws_sns_topic.alarm.arn
   protocol  = "email"
   endpoint  = "cms-macfc@corbalt.com"
+}
+
+resource "aws_sns_topic_policy" "alarm" {
+  arn    = aws_sns_topic.alarm.arn
+  policy = data.aws_iam_policy_document.alarm_topic.json
+}
+
+data "aws_iam_policy_document" "alarm_topic" {
+  statement {
+    sid    = "AllowTaskFailureAlertToAlarmTopic"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["events.amazonaws.com"]
+    }
+
+    actions   = ["SNS:Publish"]
+    resources = [aws_sns_topic.alarm.arn]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [module.ecs_task_failure_alert.eventbridge_rule_arn]
+    }
+  }
 }
 
 module "ecs_task_failure_alert" {
