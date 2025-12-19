@@ -233,9 +233,6 @@ resource "aws_sns_topic_policy" "alarm" {
 
 data "aws_iam_policy_document" "alarm_topic" {
   statement {
-    sid    = "AllowTaskFailureAlertToAlarmTopic"
-    effect = "Allow"
-
     principals {
       type        = "Service"
       identifiers = ["events.amazonaws.com"]
