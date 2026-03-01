@@ -1,6 +1,6 @@
 {
   "name": "mac-fc-security-hub-collector",
-  "description": "A tool that pulls findings from AWS Security Hub and outputs them to S3 for consumption by visualization tools.",
+  "description": "Repo for security hub findings collector tool",
   "longDescription": "A tool that pulls findings from AWS Security Hub and outputs them to S3 for consumption by visualization tools.",
   "status": "Production",
   "permissions": {
@@ -19,7 +19,7 @@
   "repositoryHost": "github.com/CMS-Enterprise",
   "repositoryVisibility": "public",
   "vcs": "git",
-  "laborHours": 0,
+  "laborHours": 3399,
   "reuseFrequency": {
     "forks": 0
   },
@@ -31,13 +31,18 @@
     "it-security"
   ],
   "softwareType": "standalone/backend",
-  "languages": [],
+  "languages": [
+    "Go",
+    "HCL",
+    "Shell",
+    "Dockerfile"
+  ],
   "maintenance": "contract",
   "contractNumber": "47QTCA21D00AC",
   "date": {
-    "created": "",
-    "lastModified": "",
-    "metaDataLastUpdated": ""
+    "created": "2021-04-05T13:31:36Z",
+    "lastModified": "2025-12-19T15:43:59Z",
+    "metaDataLastUpdated": "2026-03-01T00:11:48.129Z"
   },
   "tags": [
     "sechub",
