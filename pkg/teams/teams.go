@@ -19,6 +19,12 @@ var seaToolAccountIDs = []string{
 	"635526538414",
 }
 
+// The 988267347373 - MDCT RHTP Impl account is in the Teams API team data (because we get CUR data from them)
+// but not in the MACBIS OU, so our cloud rule doesn't push the cross account role to them
+var mdctRHTPImplIDs = []string{
+	"988267347373",
+}
+
 type duplicateAccountIDError struct {
 	message string
 }
@@ -96,6 +102,11 @@ func GetTeamsFromTeamsAPI(baseURL string, apiKey string, rolePath string) (map[A
 
 			// skip SEATool accounts
 			if slices.Contains(seaToolAccountIDs, acct.ID) {
+				continue
+			}
+
+			// skip MDCT RHTP Impl account
+			if slices.Contains(mdctRHTPImplIDs, acct.ID) {
 				continue
 			}
 
