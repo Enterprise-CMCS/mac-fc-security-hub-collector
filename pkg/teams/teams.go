@@ -19,7 +19,7 @@ var seaToolAccountIDs = []string{
 	"635526538414",
 }
 
-// The 988267347373 - MDCT RHTP Impl account is in the Teams API team data (because we get CUR data from them)
+// The MDCT RHTP accounts are in the Teams API team data (because we get CUR data from them)
 // but not in the MACBIS OU, so our cloud rule doesn't push the cross account role to them
 var mdctRHTPIDs = []string{
 	"823615568263", // Prod
@@ -107,7 +107,7 @@ func GetTeamsFromTeamsAPI(baseURL string, apiKey string, rolePath string) (map[A
 				continue
 			}
 
-			// skip MDCT RHTP Impl account
+			// skip MDCT RHTP accounts
 			if slices.Contains(mdctRHTPIDs, acct.ID) {
 				continue
 			}
