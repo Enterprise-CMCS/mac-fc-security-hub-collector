@@ -5,7 +5,7 @@ COPY . .
 RUN CGO_ENABLED=0 go build -o /bin/security-hub-collector .
 
 FROM alpine:3.22 AS certs
-RUN apk --no-cache add ca-certificates=20250911-r0
+RUN apk --no-cache add ca-certificates
 
 FROM scratch
 COPY --from=build /bin/security-hub-collector /bin/security-hub-collector
