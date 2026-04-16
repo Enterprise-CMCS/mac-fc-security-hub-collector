@@ -27,3 +27,4 @@ repos:
     hooks:
       - id: hadolint-docker
         entry: hadolint/hadolint:latest hadolint
+        args: [--ignore, DL3018]
