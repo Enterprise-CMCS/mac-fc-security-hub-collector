@@ -8,15 +8,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Generate token from GitHub App
         id: create_token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.PR_PERMS_APP_ID }}
+          client-id: ${{ secrets.PR_PERMS_APP_ID }}
           private-key: ${{ secrets.PR_PERMS_APP_SECRET }}
           owner: Enterprise-CMCS
 
