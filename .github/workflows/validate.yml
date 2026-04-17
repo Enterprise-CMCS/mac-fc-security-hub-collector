@@ -13,8 +13,7 @@ jobs:
     - name: setup go
       uses: actions/setup-go@v6
       with:
-        go-version: 'stable'
-        check-latest: true
+        go-version-file: go.mod
 
     - name: Generate token from GitHub App
       id: create_token
