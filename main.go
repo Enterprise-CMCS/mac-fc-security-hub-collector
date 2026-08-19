@@ -111,7 +111,7 @@ func collectFindings(secHubRegions []string) error {
 	defer func() {
 		ferr := h.FlushAndClose()
 		if ferr != nil {
-			log.Fatalf("could not flush buffer and close output file: %v", err)
+			log.Fatalf("could not flush buffer and close output file: %v", ferr)
 		}
 	}()
 
@@ -130,14 +130,22 @@ func collectFindings(secHubRegions []string) error {
 		}
 	}
 
+	var failures int
 	for account, teamName := range accountsToTeams {
 		for _, secHubRegion := range secHubRegions {
 			log.Printf("getting findings for account %v in %v", account.ID, secHubRegion)
-			err = h.GetFindingsAndWriteToOutput(secHubRegion, teamName, account)
+			err := h.GetFindingsAndWriteToOutput(secHubRegion, teamName, account)
 			if err != nil {
-				log.Fatalf("could not get findings for account %v in %v: %v", account.ID, secHubRegion, err)
+				log.Printf("could not get findings for account %v in %v: %v", account.ID, secHubRegion, err)
+				failures++
 			}
 		}
+	}
+	if failures > 0 {
+		log.Printf("failed to collect findings for %d of %d account/region pairs", failures, len(accountsToTeams)*len(secHubRegions))
+	}
+	if failures == len(accountsToTeams)*len(secHubRegions) {
+		return fmt.Errorf("could not collect findings for any account")
 	}
 
 	return nil
