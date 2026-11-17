@@ -5,9 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"slices"
 
-	teamsapi "github.com/Enterprise-CMCS/mac-fc-teams-api/client"
 	"github.com/aws/aws-sdk-go-v2/aws/arn"
 )
 
@@ -78,9 +79,7 @@ func ParseTeamMap(base64Str string) (accountsToTeams map[Account]string, err err
 
 // GetTeamsFromTeamsAPI loads a map of Accounts to team names from the Teams API
 func GetTeamsFromTeamsAPI(baseURL string, apiKey string, rolePath string) (map[Account]string, error) {
-	client := teamsapi.NewClient(baseURL, apiKey)
-
-	teams, err := client.GetAllTeams()
+	teams, err := getAllTeams(baseURL, apiKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load teams from Teams API: %w", err)
 	}
@@ -117,6 +116,45 @@ func GetTeamsFromTeamsAPI(baseURL string, apiKey string, rolePath string) (map[A
 	}
 
 	return accountsToTeams, nil
+}
+
+type teamResponse struct {
+	Name        string            `json:"name"`
+	AWSAccounts []accountResponse `json:"aws_accounts"`
+}
+
+type accountResponse struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	IsInactive bool   `json:"is_inactive"`
+}
+
+func getAllTeams(baseURL string, apiKey string) ([]teamResponse, error) {
+	req, err := http.NewRequest(http.MethodGet, baseURL+"/team/", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", "Bearer "+apiKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, body)
+	}
+
+	var teams []teamResponse
+	if err := json.Unmarshal(body, &teams); err != nil {
+		return nil, err
+	}
+	return teams, nil
 }
 
 // hasAccount checks if the given account ID is in the map of Accounts to team names
